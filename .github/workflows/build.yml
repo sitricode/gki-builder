@@ -75,6 +75,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      
+      # Optimize disk space before starting
+      - name: Free disk space
+        run: |
+          # Remove unnecessary large packages
+          sudo apt-get remove --purge -y azure-cli ghc* zulu* hhvm llvm* firefox google-chrome-stable dotnet*
+          sudo apt-get autoremove -y
+          sudo apt-get clean
+          
+          # Remove large directories
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo rm -rf /usr/local/share/boost /usr/local/share/chromium /usr/local/share/powershell
+          
+          # Show available space
+          df -h
+
       - name: Set STATUS based on trigger type
         run: |
           case "${{ toJson(github.event.inputs) }}" in
@@ -91,11 +111,6 @@ jobs:
       - name: Verify STATUS
         run: echo "Triggered by $TRIGGER, STATUS is set to $STATUS"
 
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
       - name: Install dependencies
         run: |
           export MAN_DISABLE=true
@@ -103,25 +118,14 @@ jobs:
           sudo apt install bc cpio flex bison aptitude gh git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
           sudo aptitude install libssl-dev -y
 
-      - name: Set Swap Space
-        uses: pierotofy/set-swap-space@master
-        with:
-          swap-size-gb: 10
-
-      - name: Restore Toolchain Cache
+      - name: Restore toolchain cache
+        id: toolchain_cache
         uses: actions/cache/restore@v4
         with:
           path: tc
-          key: tc-
+          key: tc-${{ hashFiles('config.sh') }}
           restore-keys: |
             tc-
-
-      - name: Set up ccache
-        run: |
-          ccache --max-size=2G
-          ccache --set-config=compression=true
-          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
-          ccache --version
 
       - name: Restore ccache from cache
         uses: actions/cache/restore@v4
@@ -130,7 +134,21 @@ jobs:
           key: ccache-${{ github.run_number }}
           restore-keys: |
             ccache-
-
+      
+      # Smart ccache optimization
+      - name: Set up ccache with optimizations
+        run: |
+          ccache --max-size=5G
+          # Use compression level 1 for better speed/size trade-off
+          ccache --set-config=compression=true
+          ccache --set-config=compression_level=1
+          # Enable direct mode for better hit rates
+          ccache --set-config=direct_mode=true
+          # Set sloppiness to get more cache hits
+          ccache --set-config=sloppiness=file_macro,time_macros,include_file_mtime,include_file_ctime
+          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+          ccache --zero-stats
+          
       - name: Build Kernel
         env:
           KSU: ${{ inputs.KernelSU }}
@@ -173,7 +191,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.BASE_NAME }}-${{ github.run_number }}
-          retention-days: 1
           path: |
             artifacts/*.zip
             artifacts/*.img
@@ -183,17 +200,16 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: info-${{ github.run_number }}
-          retention-days: 1
           path: |
             artifacts/*.txt
 
-      - name: Save Toolchain Cache
+      - name: Save toolchain cache
         if: always() && !cancelled()
         uses: actions/cache/save@v4
         with:
           path: tc
-          key: tc-${{ hashFiles('tc/bin/clang') }}
-
+          key: tc-${{ hashFiles('config.sh') }}
+      
       - name: Save ccache to cache
         if: always() && !cancelled()
         uses: actions/cache/save@v4
@@ -201,7 +217,38 @@ jobs:
           path: ~/.ccache
           key: ccache-${{ github.run_number }}
 
-      - name: Delete Old Kernel & Toolchain Cache (Keep 2 Newest Each)
+  cleanup:
+    needs: [build]
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete old artifacts
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const response = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const artifacts = response.data.artifacts;
+            
+            // Keep only the 5 most recent builds
+            const artifactsToDelete = artifacts
+              .sort((a, b) => b.created_at - a.created_at)
+              .slice(5);
+              
+            // Delete old artifacts
+            for (const artifact of artifactsToDelete) {
+              console.log(`Deleting artifact ${artifact.name} (ID: ${artifact.id})`);
+              await github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id,
+              });
+            }
+            
+      - name: Clean old caches
         run: |
           delete_old_caches() {
             local PREFIX=$1
@@ -221,3 +268,5 @@ jobs:
 
           delete_old_caches "ccache-"
           delete_old_caches "tc-"
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
