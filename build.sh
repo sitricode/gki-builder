@@ -188,7 +188,7 @@ if [[ $USE_KSU_MANUAL_HOOK == "true" ]]; then
         log "Manual hook code already present in fs/exec.c. Skipping patch..."
     else
         log "Applying manual-hook patch to the kernel source..."
-        if ! patch -p1 <"$workdir/wildplus_patches/hooks/new_hooks.patch"; then
+        if ! patch -p1 <"$workdir/wildplus_patches/next/syscall_hooks.patch"; then
             log "❌ Patch rejected. Reverting changes..."
             for file in fs/exec.c fs/open.c fs/read_write.c fs/stat.c \
                 drivers/input/input.c drivers/tty/pty.c; do
