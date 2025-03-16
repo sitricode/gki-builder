@@ -13,11 +13,11 @@ export KBUILD_BUILD_HOST="$KERNEL_NAME"
 export KBUILD_BUILD_TIMESTAMP=$(date)
 
 # AnyKernel variables
-ANYKERNEL_REPO="https://github.com/hazepynut/anykernel"
-ANYKERNEL_BRANCH="gki"
+ANYKERNEL_REPO="https://github.com/linastorvaldz/anykernel"
+ANYKERNEL_BRANCH="gki-android12-5.10"
 
 # Kernel
-KERNEL_REPO="https://github.com/hazepynut/kernel_new"
+KERNEL_REPO="https://github.com/linastorvaldz/kernel_new"
 KERNEL_BRANCH="android12-5.10"
 KERNEL_DEFCONFIG="gki_defconfig"
 DEFCONFIG_FILE="$workdir/common/arch/arm64/configs/$KERNEL_DEFCONFIG"
@@ -31,7 +31,7 @@ DEFCONFIGS="
 " # Leave this empty if you don't need to merge any configs
 
 # Releases repository
-GKI_RELEASES_REPO="https://github.com/hazepynut/quartix-releases"
+GKI_RELEASES_REPO="https://github.com/linastorvaldz/quartix-releases"
 
 # AOSP Clang
 USE_AOSP_CLANG="false"
