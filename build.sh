@@ -157,14 +157,12 @@ config --file $DEFCONFIG_FILE --enable CONFIG_TMPFS_XATTR
 config --file $DEFCONFIG_FILE --enable CONFIG_TMPFS_POSIX_ACL
 
 ## KernelSU setup
-# Remove KernelSU in driver in kernel source if exist
-cd "$workdir/common" || exit 1
 
-if [[ $KSU != "None" ]]; then
+if [[ $KSU != "none" ]]; then
     for ksupath in "drivers/staging/kernelsu" "drivers/kernelsu" "KernelSU"; do
         if [[ -d $ksupath ]]; then
             log "KernelSU driver found in $ksupath, Removing..."
-            parent_dir="${ksupath%/*}"
+            parent_dir="$(dirname $ksupath)"
 
             [[ -f "$parent_dir/Kconfig" ]] && sed -i '/kernelsu/d' "$parent_dir/Kconfig"
             [[ -f "$parent_dir/Makefile" ]] && sed -i '/kernelsu/d' "$parent_dir/Makefile"
@@ -205,7 +203,7 @@ fi
 
 # Install KernelSU driver
 cd $workdir
-if [[ $KSU != "None" ]]; then
+if [[ $KSU != "none" ]]; then
     log "Installing KernelSU..."
 
     case "$KSU" in
@@ -218,9 +216,9 @@ if [[ $KSU != "None" ]]; then
 fi
 
 # SUSFS for KSU setup
-if [[ $USE_KSU_SUSFS == "true" && -z $KSU ]]; then
+if [[ $USE_KSU_SUSFS == "true" && $KSU == "none" ]]; then
     error "You can't use SuSFS without KernelSU!"
-elif [[ -n $KSU && $USE_KSU_SUSFS == "true" ]]; then
+elif [[ $KSU != "none" && $USE_KSU_SUSFS == "true" ]]; then
     log "Cloning susfs4ksu..."
     git clone -q --depth=1 https://gitlab.com/simonpunk/susfs4ksu -b gki-$GKI_VERSION $workdir/susfs4ksu
     SUSFS_PATCHES="$workdir/susfs4ksu/kernel_patches"
@@ -271,15 +269,15 @@ config --file $DEFCONFIG_FILE \
 
 text=$(
     cat <<EOF
-*~~~ $KERNEL_NAME CI ~~~*
-*GKI Version*: \`$GKI_VERSION\`
-*Kernel Version*: \`$KERNEL_VERSION\`
-*Build Status*: \`$STATUS\`
-*Date*: \`$KBUILD_BUILD_TIMESTAMP\`
-*KSU Variant*: \`$VARIANT\`$([[ $KSU != "None" ]] && echo "
-*KSU Version*: \`$KSU_VERSION\`")
-*SUSFS*: \`$([[ $USE_KSU_SUSFS == "true" ]] && echo "$SUSFS_VERSION" || echo "none")\`
-*Compiler*: \`$COMPILER_STRING\`
+*== Krenol CI ==*
+*GKI Version*: $GKI_VERSION
+*Kernel Version*: $KERNEL_VERSION
+*Build Status*: $STATUS
+*Date*: $KBUILD_BUILD_TIMESTAMP
+*KSU Variant*: ${VARIANT}$([[ $KSU != "none" ]] && echo "
+*KSU Version*: $KSU_VERSION")
+*SUSFS*: $([[ $USE_KSU_SUSFS == "true" ]] && echo "$SUSFS_VERSION" || echo "none")
+*Compiler*: $COMPILER_STRING
 EOF
 )
 
@@ -305,19 +303,25 @@ build_kernel() {
     set -x # Enable debugging
 
     log "Generating config..."
-    make $MAKE_ARGS $KERNEL_DEFCONFIG || error "❌ Generating defconfig from $KERNEL_DEFCONFIG failed!"
+    make $MAKE_ARGS $KERNEL_DEFCONFIG || {
+        echo "Failed to generate config!"
+        return 1
+    }
 
     # Merge additional configs
     if [[ -n $DEFCONFIGS ]]; then
         for CONFIG in $DEFCONFIGS; do
             log "Merging $CONFIG into the config file..."
-            make $MAKE_ARGS scripts/kconfig/merge_config.sh $CONFIG || error "❌ Config merge failed!"
+            make $MAKE_ARGS scripts/kconfig/merge_config.sh $CONFIG || {
+                echo "Failed to merge configs!"
+                return 1
+            }
         done
     fi
 
     # Ensure valid config
     log "Ensuring config is valid..."
-    make $MAKE_ARGS olddefconfig || error "❌ olddefconfig failed!"
+    make $MAKE_ARGS olddefconfig
 
     # Upload config file
     if [[ $GENERATE_DEFCONFIG == "true" ]]; then
@@ -331,30 +335,31 @@ build_kernel() {
     [[ $BUILD_BOOTIMG == "true" ]] && build_targets+=" Image.lz4 Image.gz"
 
     log "Building kernel image(s)..."
-    make $MAKE_ARGS $build_targets || error "❌ Kernel build failed!"
+    make $MAKE_ARGS $build_targets || {
+        echo "Failed to build kernel image(s)!"
+        return 1
+    }
 
     # Build kernel modules
     if [[ $BUILD_LKMS == "true" ]]; then
         log "Building kernel modules..."
-        make $MAKE_ARGS modules
+        make $MAKE_ARGS modules || {
+            echo "Failed to build kernel modules!"
+            return 1
+        }
     fi
 
     set +x # Disable debugging after the function
 }
 
-set -o pipefail # Ensure errors in pipelines cause failure
 build_kernel
-exit_code=${PIPESTATUS[0]} # Capture the exit code of build_kernel
+retVal=$?
 
-if [[ $exit_code -ne 0 ]]; then
-    exit $exit_code # Exit only if an error occurred
-fi
-
-if [[ ! -f $KERNEL_IMAGE ]]; then
+if [[ ! -f $KERNEL_IMAGE ]] || [[ $retVal -gt 0 ]]; then
     send_msg "❌ Build failed!"
     # Upload log and config for debugging
     upload_file "$workdir/out/.config"
-    error "Kernel Image does not exist at $KERNEL_IMAGE"
+    error "Build aborted."
 fi
 
 ## Post-compiling stuff
@@ -444,7 +449,7 @@ if [[ $BUILD_BOOTIMG == "true" ]]; then
     for format in raw lz4 gz; do
         # Initialize kernel variable
         kernel="./Image"
-        [ "$format" != "raw" ] && kernel+=".$format"
+        [[ $format != "raw" ]] && kernel+=".$format"
 
         log "Using kernel: $kernel"
         output="${BOOTIMG_NAME/dummy/$format}"
@@ -485,8 +490,8 @@ if [[ $LAST_BUILD == "true" ]]; then
     ) >>$workdir/artifacts/info.txt
 fi
 
+send_msg "✅ Build Succeeded"
 if [[ $STATUS == "BETA" ]]; then
-    send_msg "✅ Build Succeeded"
     send_msg "📦 [Download]($NIGHTLY_LINK)"
 fi
 
