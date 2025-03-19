@@ -158,7 +158,7 @@ config --file $DEFCONFIG_FILE --enable CONFIG_TMPFS_POSIX_ACL
 
 ## KernelSU setup
 
-if [[ $KSU != "none" ]]; then
+if [[ $KSU != "None" ]]; then
     for ksupath in "drivers/staging/kernelsu" "drivers/kernelsu" "KernelSU"; do
         if [[ -d $ksupath ]]; then
             log "KernelSU driver found in $ksupath, Removing..."
@@ -203,7 +203,7 @@ fi
 
 # Install KernelSU driver
 cd $workdir
-if [[ $KSU != "none" ]]; then
+if [[ $KSU != "None" ]]; then
     log "Installing KernelSU..."
 
     case "$KSU" in
@@ -216,9 +216,9 @@ if [[ $KSU != "none" ]]; then
 fi
 
 # SUSFS for KSU setup
-if [[ $USE_KSU_SUSFS == "true" && $KSU == "none" ]]; then
+if [[ $USE_KSU_SUSFS == "true" && $KSU == "None" ]]; then
     error "You can't use SuSFS without KernelSU!"
-elif [[ $KSU != "none" && $USE_KSU_SUSFS == "true" ]]; then
+elif [[ $KSU != "None" && $USE_KSU_SUSFS == "true" ]]; then
     log "Cloning susfs4ksu..."
     git clone -q --depth=1 https://gitlab.com/simonpunk/susfs4ksu -b gki-$GKI_VERSION $workdir/susfs4ksu
     SUSFS_PATCHES="$workdir/susfs4ksu/kernel_patches"
@@ -274,7 +274,7 @@ text=$(
 *Kernel Version*: $KERNEL_VERSION
 *Build Status*: $STATUS
 *Date*: $KBUILD_BUILD_TIMESTAMP
-*KSU Variant*: ${VARIANT}$([[ $KSU != "none" ]] && echo "
+*KSU Variant*: ${VARIANT}$([[ $KSU != "None" ]] && echo "
 *KSU Version*: $KSU_VERSION")
 *SUSFS*: $([[ $USE_KSU_SUSFS == "true" ]] && echo "$SUSFS_VERSION" || echo "none")
 *Compiler*: $COMPILER_STRING
