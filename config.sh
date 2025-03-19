@@ -14,7 +14,7 @@ export KBUILD_BUILD_TIMESTAMP=$(date)
 
 # AnyKernel variables
 ANYKERNEL_REPO="https://github.com/linastorvaldz/anykernel"
-ANYKERNEL_BRANCH="gki-android12-5.10"
+ANYKERNEL_BRANCH="gki"
 
 # Kernel
 KERNEL_REPO="https://github.com/linastorvaldz/kernel_new"
@@ -43,6 +43,6 @@ CUSTOM_CLANG_SOURCE="https://github.com/Rv-Project/RvClang/releases/download/20.
 CUSTOM_CLANG_BRANCH=""
 
 # Zip name
-BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%Y-%m-%d-%H%M")
-ZIP_NAME="$KERNEL_NAME-KVER-VARIANT.zip"
+BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%Y%m%d-%H%M")
+ZIP_NAME="$KERNEL_NAME-KVER-VARIANT-$BUILD_DATE.zip"
 # Note: KVER and VARIANT are placeholder and they will be changed in the build.sh script.
