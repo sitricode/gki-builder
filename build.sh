@@ -106,7 +106,7 @@ if [[ ! -x $CLANG_PATH/bin/clang || ! -f $CLANG_PATH/VERSION || "$(cat $CLANG_PA
         while [ "$(find "$CLANG_PATH" -mindepth 1 -maxdepth 1 -type d | wc -l)" -eq 1 ]; do
             single_dir=$(find "$CLANG_PATH" -mindepth 1 -maxdepth 1 -type d)
             mv "$single_dir"/* "$CLANG_PATH"/
-            rmdir "$single_dir"
+            rm -rf "$single_dir"
         done
     else
         git clone -q --depth=1 -b "$CUSTOM_CLANG_BRANCH" "$CLANG_URL" "$CLANG_PATH" || error "Clang download failed."
