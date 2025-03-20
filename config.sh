@@ -44,5 +44,5 @@ CUSTOM_CLANG_BRANCH=""
 
 # Zip name
 BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%Y%m%d-%H%M")
-ZIP_NAME="$KERNEL_NAME-KVER-VARIANT-$BUILD_DATE.zip"
+ZIP_NAME="$KERNEL_NAME-KVER-VARIANT.zip"
 # Note: KVER and VARIANT are placeholder and they will be changed in the build.sh script.
