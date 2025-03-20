@@ -39,7 +39,7 @@ AOSP_CLANG_SOURCE="r547379" # Should be version number or direct link to clang t
 
 # Custom clang
 USE_CUSTOM_CLANG="true"
-CUSTOM_CLANG_SOURCE="https://github.com/Rv-Project/RvClang/releases/download/20.1.0/RvClang-20.1.0-bolt-pgo-full_lto.tar.gz"
+CUSTOM_CLANG_SOURCE="https://www.kernel.org/pub//tools/llvm/files/llvm-20.1.1-x86_64.tar.gz"
 CUSTOM_CLANG_BRANCH=""
 
 # Zip name
