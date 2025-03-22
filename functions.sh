@@ -1,43 +1,75 @@
 #!/usr/bin/env bash
 
-# ------------------
-# Functions
-# ------------------
+# ==============
+#    Functions
+# ==============
 
 # Telegram functions
+# upload_file <path/to/file>
 upload_file() {
-    local file="$1"
+    local FILE="$1"
 
-    if ! [[ -f $file ]]; then
-        error "file $file doesn't exist"
+    if ! [[ -f $FILE ]]; then
+        error "file $FILE doesn't exist"
     fi
 
-    chmod 777 $file
+    chmod 777 $FILE
 
-    curl -s -F document=@"$file" "https://api.telegram.org/bot$TOKEN/sendDocument" \
-        -F chat_id="$CHAT_ID" \
+    curl -s -F document=@"$FILE" "https://api.telegram.org/bot$TOKEN/sendDocument" \
+        -F "chat_id=$CHAT_ID" \
         -F "disable_web_page_preview=true" \
-        -F "parse_mode=markdown" \
-        -o /dev/null
+        -F "parse_mode=markdown"
 }
 
+# reply_file <message_id> <path/to/file>
+reply_file() {
+    local MSG_ID="$1"
+    local FILE="$2"
+
+    if ! [[ -f $FILE ]]; then
+        error "file $FILE doesn't exist"
+    fi
+
+    chmod 777 $FILE
+
+    curl -s -F document=@"$FILE" "https://api.telegram.org/bot$TOKEN/sendDocument" \
+        -F "chat_id=$CHAT_ID" \
+        -F "reply_to_message_id=$MSG_ID" \
+        -F "disable_web_page_preview=true" \
+        -F "parse_mode=markdown"
+}
+
+# send_msg <text>
 send_msg() {
-    local msg="$1"
-    curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
-        -d chat_id="$CHAT_ID" \
+    local TEXT="$1"
+
+    curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+        -d "chat_id=$CHAT_ID" \
         -d "disable_web_page_preview=true" \
         -d "parse_mode=markdown" \
-        -d text="$msg" \
-        -o /dev/null
+        -d "text=$TEXT"
+}
+
+# reply_msg <message_id> <text>
+reply_msg() {
+    local MSG_ID="$1"
+    local TEXT="$2"
+
+    curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+        -d "chat_id=${CHAT_ID}" \
+        -d "text=${TEXT}" \
+        -d "reply_to_message_id=${MSG_ID}" \
+        -d "parse_mode=markdown"
 }
 
 # KernelSU installation function
+# install_ksu <username/repo-name> [<ref-or-branch>]
 install_ksu() {
     local repo="$1"
     local ref="$2" # Can be a branch or a tag
 
     [[ -z $repo ]] && {
-        echo "Usage: install_ksu <repo-username/ksu-repo-name> [branch-or-tag]"
+        echo "Usage: install_ksu <username/repo-name> [<ref-or-branch>]"
         return 1
     }
 
@@ -72,11 +104,11 @@ config() {
 
 # Logging function
 log() {
-    echo -e "\033[32m[LOG]\033[0m $*"
+    echo -e "[LOG] $*"
 }
 
 error() {
-    echo -e "\033[31m[ERROR]\033[0m $*"
+    echo -e "[ERROR] $*"
     upload_file "$workdir/build.log"
     exit 1
 }

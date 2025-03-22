@@ -9,8 +9,9 @@ GKI_VERSION="android12-5.10"
 # Build variables
 export TZ="Asia/Makassar"
 export KBUILD_BUILD_USER="eraselk"
-export KBUILD_BUILD_HOST="$KERNEL_NAME"
+export KBUILD_BUILD_HOST="gacorprjkt"
 export KBUILD_BUILD_TIMESTAMP=$(date)
+BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%Y%m%d-%H%M")
 
 # AnyKernel variables
 ANYKERNEL_REPO="https://github.com/linastorvaldz/anykernel"
@@ -20,15 +21,7 @@ ANYKERNEL_BRANCH="gki"
 KERNEL_REPO="https://github.com/linastorvaldz/kernel_new"
 KERNEL_BRANCH="android12-5.10"
 KERNEL_DEFCONFIG="gki_defconfig"
-DEFCONFIG_FILE="$workdir/common/arch/arm64/configs/$KERNEL_DEFCONFIG"
-
-# Defconfigs would be merged in the compiling processes
-DEFCONFIGS_EXAMPLE="
-vendor/xiaomi.config
-vendor/gold.config
-"
-DEFCONFIGS="
-" # Leave this empty if you don't need to merge any configs
+DEFCONFIGS_TO_MERGE=""
 
 # Releases repository
 GKI_RELEASES_REPO="https://github.com/linastorvaldz/quartix-releases"
@@ -42,7 +35,5 @@ USE_CUSTOM_CLANG="true"
 CUSTOM_CLANG_SOURCE="https://www.kernel.org/pub//tools/llvm/files/llvm-20.1.1-x86_64.tar.gz"
 CUSTOM_CLANG_BRANCH=""
 
-# Zip name
-BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%Y%m%d-%H%M")
-ZIP_NAME="$KERNEL_NAME-KVER-VARIANT.zip"
 # Note: KVER and VARIANT are placeholder and they will be changed in the build.sh script.
+ZIP_NAME="$KERNEL_NAME-KVER-VARIANT.zip"

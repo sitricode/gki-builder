@@ -17,25 +17,24 @@ done
 # ---------------
 # 	MAIN
 # ---------------
-
 # Import configuration
 source $workdir/config.sh
+
 # Import functions
 source $workdir/functions.sh
 
 # Set up timezone
 sudo timedatectl set-timezone $TZ
 
-# Clone needed repositories
 cd $workdir
 
-# Kernel patches source
+# Clone kernel patches
 log "Cloning kernel patch from (ChiseWaguri/kernel-patches) into $workdir/chise_patches"
 git clone -q --depth=1 https://github.com/ChiseWaguri/kernel-patches chise_patches
 log "Cloning kernel patch from (WildPlusKernel/kernel-patches) into $workdir/wildplus_patches"
 git clone -q --depth=1 https://github.com/WildPlusKernel/kernel_patches wildplus_patches
 
-# Kernel source
+# Clone kernel source
 log "Cloning kernel source from ($(basename "$KERNEL_REPO")) to $workdir/common"
 git clone -q --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
 
@@ -43,7 +42,7 @@ git clone -q --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
 cd $workdir/common
 KERNEL_VERSION=$(make kernelversion)
 
-# Set variant
+# Set KernelSU variant
 log "Setting KernelSU variant..."
 declare -A KSU_VARIANTS=(
     ["Official"]="KSU"
@@ -51,10 +50,10 @@ declare -A KSU_VARIANTS=(
     ["Next"]="KSUN"
     ["xx"]="XXKSU"
 )
-
 VARIANT="${KSU_VARIANTS[$KSU]:-none}"
 
-# Append SUSFS if enabled
+# Append SUSFS to $VARIANT
+# if enabled
 [[ $USE_KSU_SUSFS == "true" && $VARIANT != "none" ]] && VARIANT+="xSUSFS"
 
 # Set ZIP_NAME with replacements
@@ -69,7 +68,6 @@ fi
 
 # Download Toolchains
 cd $workdir
-
 # Determine Clang source
 if [[ $USE_AOSP_CLANG == "true" ]]; then
     if [[ $AOSP_CLANG_SOURCE =~ ^https?:// ]]; then
@@ -117,13 +115,7 @@ else
     log "✅ Using cached Clang: $CLANG_INFO."
 fi
 
-# Set Clang as compiler
-export CC="ccache clang"
-export CXX="ccache clang++"
-export HOSTCC="$CC"
-export HOSTCXX="$CXX"
-
-# Set $PATH
+# Add clang path into $PATH
 export PATH="$CLANG_PATH/bin:$PATH"
 
 # Ensure binutils (aarch64-linux-gnu) is available
@@ -132,7 +124,7 @@ if ! find "$CLANG_PATH/bin" -name "aarch64-linux-gnu-*" | grep -q .; then
         log "✅ aarch64-linux-gnu found in $CLANG_PATH/binutils."
     else
         log "🔍 aarch64-linux-gnu not found. Cloning binutils..."
-        git clone -q --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 "$CLANG_PATH/binutils" || error "❌ Failed to clone binutils."
+        git clone -q --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 "$CLANG_PATH/binutils"
     fi
     export PATH="$CLANG_PATH/binutils:$PATH"
 else
@@ -263,17 +255,20 @@ if grep -q 'echo "+"' scripts/setlocalversion; then
     sed -i 's/echo "+"/# echo "+"/g' scripts/setlocalversion
 fi
 
+# get latest commit hash
+COMMIT_HASH=$(git rev-parse --short HEAD)
+
 # Set localversion to the KERNEL_NAME variable
 config --file $DEFCONFIG_FILE \
-    --set-str LOCALVERSION "-$KERNEL_NAME"
+    --set-str LOCALVERSION "-$KERNEL_NAME/$COMMIT_HASH"
 
 text=$(
     cat <<EOF
-*== Krenol CI ==*
+*=== Kernel CI ===*
 *GKI Version*: $GKI_VERSION
 *Kernel Version*: $KERNEL_VERSION
 *Build Status*: $STATUS
-*Date*: $KBUILD_BUILD_TIMESTAMP
+*Build Date*: $BUILD_DATE
 *KSU Variant*: ${VARIANT}$([[ $KSU != "None" ]] && echo "
 *KSU Version*: $KSU_VERSION")
 *SUSFS*: $([[ $USE_KSU_SUSFS == "true" ]] && echo "$SUSFS_VERSION" || echo "none")
@@ -281,7 +276,7 @@ text=$(
 EOF
 )
 
-send_msg "$text"
+MESSAGE_ID=$(send_msg "$text" 2>&1 | jq -r .result.message_id)
 
 # Define make args
 MAKE_ARGS="
@@ -294,78 +289,63 @@ CROSS_COMPILE=aarch64-linux-gnu-
 CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
 "
 KERNEL_IMAGE=$workdir/out/arch/arm64/boot/Image
+DEFCONFIG=$(find $workdir/common/arch/arm64/configs -name "$KERNEL_DEFCONFIG")
 
 # Build GKI
 cd $workdir/common
 
-build_kernel() {
-    log "Building kernel..."
-    set -x # Enable debugging
+set +e
+log "Building kernel..."
 
-    log "Generating config..."
-    make $MAKE_ARGS $KERNEL_DEFCONFIG || {
-        echo "Failed to generate config!"
-        return 1
-    }
+log "Generating config..."
+make $MAKE_ARGS $KERNEL_DEFCONFIG
 
-    # Merge additional configs
-    if [[ -n $DEFCONFIGS ]]; then
-        for CONFIG in $DEFCONFIGS; do
-            log "Merging $CONFIG into the config file..."
-            make $MAKE_ARGS scripts/kconfig/merge_config.sh $CONFIG || {
-                echo "Failed to merge configs!"
-                return 1
-            }
-        done
-    fi
+# Merge additional configs
+if [[ -n $DEFCONFIGS_TO_MERGE ]]; then
+    for CONFIG in $DEFCONFIGS_TO_MERGE; do
+        log "Merging $CONFIG into the config file..."
+        make $MAKE_ARGS scripts/kconfig/merge_config.sh $CONFIG
+    done
+fi
 
-    # Ensure valid config
-    log "Ensuring config is valid..."
-    make $MAKE_ARGS olddefconfig
+# Ensure valid config
+log "Ensuring config is valid..."
+make $MAKE_ARGS olddefconfig
 
-    # Upload config file
-    if [[ $GENERATE_DEFCONFIG == "true" ]]; then
-        log "Uploading defconfig..."
-        upload_file $workdir/out/.config
-        exit 0
-    fi
+# Upload config file
+# if GENERATE_DEFCONFIG is true
+if [[ $GENERATE_DEFCONFIG == "true" ]]; then
+    log "Uploading defconfig..."
+    upload_file $workdir/out/.config
+    exit 0
+fi
 
-    # Build the actual kernel
-    build_targets="Image"
-    [[ $BUILD_BOOTIMG == "true" ]] && build_targets+=" Image.lz4 Image.gz"
+# Build the actual kernel
+build_targets="Image"
+[[ $BUILD_BOOTIMG == "true" ]] && build_targets+=" Image.lz4 Image.gz"
 
-    log "Building kernel image(s)..."
-    make $MAKE_ARGS $build_targets || {
-        echo "Failed to build kernel image(s)!"
-        return 1
-    }
+log "Building kernel image(s)..."
+make $MAKE_ARGS $build_targets
 
-    # Build kernel modules
-    if [[ $BUILD_LKMS == "true" ]]; then
-        log "Building kernel modules..."
-        make $MAKE_ARGS modules || {
-            echo "Failed to build kernel modules!"
-            return 1
-        }
-    fi
+# Build kernel modules
+# if BUILD_LKMS is true
+if [[ $BUILD_LKMS == "true" ]]; then
+    log "Building kernel modules..."
+    make $MAKE_ARGS modules || lkms_failed=y
+fi
 
-    set +x # Disable debugging after the function
-}
+set -e
 
-build_kernel
-retVal=$?
-
-if [[ ! -f $KERNEL_IMAGE ]] || [[ $retVal -gt 0 ]]; then
-    send_msg "❌ Build failed!"
-    # Upload log and config for debugging
-    upload_file "$workdir/out/.config"
-    error "Build aborted."
+if [[ ! -f $KERNEL_IMAGE || $lkms_failed == "y" ]]; then
+    reply_msg "$MESSAGE_ID" "❌ Build failed!"
+    reply_file "$MESSAGE_ID" "$workdir/build.log"
+    exit 1
 fi
 
 ## Post-compiling stuff
 cd $workdir
 
-mkdir -p artifacts || error "Creating artifacts directory failed"
+mkdir -p artifacts
 
 # Clone AnyKernel
 log "Cloning anykernel from $(basename "$ANYKERNEL_REPO") | $ANYKERNEL_BRANCH"
@@ -437,10 +417,10 @@ if [[ $BUILD_BOOTIMG == "true" ]]; then
     mkdir -p bootimg && cd bootimg
     cp $KERNEL_IMAGES .
 
-    # Download and unpack GKI
-    log "Downloading GKI..."
+    # Download and unpack prebuilt GKI
+    log "Downloading prebuilt GKI..."
     wget -qO gki.zip https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-2023-01_r1.zip
-    log "Unpacking GKI..."
+    log "Unpacking prebuilt GKI..."
     unzip -q gki.zip && rm gki.zip
     $UNPACK_BOOTIMG --boot_img=./boot-5.10.img
     rm ./boot-5.10.img
@@ -456,7 +436,7 @@ if [[ $BUILD_BOOTIMG == "true" ]]; then
         generate_bootimg "$kernel" "$output"
 
         log "Moving $output to artifacts directory"
-        mv -f "$output" $workdir/artifacts/ || error "Move $output to artifacts failed."
+        mv -f "$output" $workdir/artifacts/
     done
     cd $workdir
 fi
@@ -480,13 +460,6 @@ if [[ $LAST_BUILD == "true" ]]; then
         echo "KERNEL_NAME=$KERNEL_NAME"
         echo "GKI_VERSION=$GKI_VERSION"
         echo "RELEASE_REPO=$(echo "$GKI_RELEASES_REPO" | sed 's|https://github.com/||')"
-        cd $workdir
-        echo "BUILDER_REPO=$(git remote get-url origin)"
-        echo "BUILDER_LAST_COMMIT=$(git remote get-url origin)/commit/$(git log -1 --format="%H")"
-        echo "BUILDER_CURRENT_BRANCH=$(git branch --show-current)"
-        cd $workdir/common
-        echo "KERNEL_REPO=$(git remote get-url origin)"
-        echo "KERNEL_LAST_COMMIT=$(git remote get-url origin)/commit/$(git log -1 --format="%H")"
     ) >>$workdir/artifacts/info.txt
 fi
 

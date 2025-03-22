@@ -196,7 +196,6 @@ jobs:
             artifacts/*.img
 
       - name: Upload Artifact (Info file)
-        if: ${{ env.STATUS }} == 'RELEASE'
         uses: actions/upload-artifact@v4
         with:
           name: info-${{ github.run_number }}
@@ -226,43 +225,61 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const response = await github.rest.actions.listArtifactsForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-            });
-            
-            const artifacts = response.data.artifacts;
-            
-            // Keep only the 5 most recent builds
-            const artifactsToDelete = artifacts
-              .sort((a, b) => b.created_at - a.created_at)
-              .slice(5);
+            async function deleteOldArtifacts() {
+              const perPage = 100;
+              let page = 1;
+              let artifacts = [];
               
-            // Delete old artifacts
-            for (const artifact of artifactsToDelete) {
-              console.log(`Deleting artifact ${artifact.name} (ID: ${artifact.id})`);
-              await github.rest.actions.deleteArtifact({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                artifact_id: artifact.id,
-              });
+              // Fetch all artifacts (with pagination)
+              while (true) {
+                const response = await github.rest.actions.listArtifactsForRepo({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  per_page: perPage,
+                  page: page,
+                });
+
+                if (response.data.artifacts.length === 0) break;
+                artifacts = artifacts.concat(response.data.artifacts);
+                page++;
+              }
+
+              // Sort artifacts by creation date (newest first)
+              artifacts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+              // Keep only the 5 most recent artifacts
+              const artifactsToDelete = artifacts.slice(5);
+
+              for (const artifact of artifactsToDelete) {
+                console.log(`Deleting artifact ${artifact.name} (ID: ${artifact.id})`);
+                await github.rest.actions.deleteArtifact({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  artifact_id: artifact.id,
+                });
+              }
             }
-            
+
+            await deleteOldArtifacts();
+
       - name: Clean old caches
         run: |
           delete_old_caches() {
             local PREFIX=$1
             echo "Checking caches for: $PREFIX"
+            
+            # Ambil daftar cache dan filter berdasarkan prefix
             CACHE_KEYS=$(gh cache list --json key,createdAt | jq -r "
-              sort_by(.createdAt) | 
-              reverse | 
-              map(select(.key | startswith(\"$PREFIX\"))) | 
+              map(select(.key | startswith(\"$PREFIX\"))) |
+              sort_by(.createdAt) |
+              reverse |
               .[2:] | 
               .[].key"
             )
+            
             for key in $CACHE_KEYS; do
               echo "Deleting cache: $key"
-              gh cache delete "$key"
+              gh cache delete "$key" --confirm
             done
           }
 
