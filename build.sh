@@ -144,6 +144,7 @@ if ! patch -p1 <$workdir/wildplus_patches/69_hide_stuff.patch; then
 fi
 
 # Apply extra tmpfs config
+DEFCONFIG_FILE=$(find $workdir/common/arch/arm64/configs -name "$KERNEL_DEFCONFIG")
 log "Applying extra tmpfs config..."
 config --file $DEFCONFIG_FILE --enable CONFIG_TMPFS_XATTR
 config --file $DEFCONFIG_FILE --enable CONFIG_TMPFS_POSIX_ACL
@@ -289,7 +290,6 @@ CROSS_COMPILE=aarch64-linux-gnu-
 CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
 "
 KERNEL_IMAGE=$workdir/out/arch/arm64/boot/Image
-DEFCONFIG=$(find $workdir/common/arch/arm64/configs -name "$KERNEL_DEFCONFIG")
 
 # Build GKI
 cd $workdir/common
