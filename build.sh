@@ -171,7 +171,7 @@ elif [[ $KSU != "None" && $USE_KSU_SUSFS == "true" ]]; then
 
     # Apply kernel-side susfs patch
     log "Patching kernel-side susfs patch"
-    ipatch -p1 <"$SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch"
+    patch -p1 <"$SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch"
 
     # Apply patch to KernelSU (KSU Side)
     if [[ $KSU == "Official" ]]; then
