@@ -17,6 +17,8 @@ on:
         type: string
       LAST_BUILD:
         type: string
+      TODO:
+        type: string
 
   workflow_dispatch:
     inputs:
@@ -89,7 +91,7 @@ jobs:
           sudo apt update -y
           sudo apt install bc cpio flex bison aptitude gh git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
           sudo aptitude install libssl-dev -y
-          
+
       - name: Build Kernel
         env:
           KSU: ${{ inputs.KernelSU }}
@@ -107,7 +109,7 @@ jobs:
           chmod a+x *.sh
 
           if [[ "$TODO" == "defconfig" ]]; then
-              export GENERATE_DEFCONFIG=true ;;
+              export GENERATE_DEFCONFIG=true
           fi
 
           ./build.sh
