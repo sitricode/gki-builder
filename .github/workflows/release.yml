@@ -17,7 +17,6 @@ jobs:
     with:
       KernelSU: ${{ matrix.variant.KernelSU }}
       SUSFS4KSU: ${{ matrix.variant.SUSFS4KSU }}
-      Clang: Default
       BUILD_BOOTIMG: "true"
       BUILD_LKMS: "false"
       KSU_MANUAL_HOOK: ${{ matrix.variant.KSU_MANUAL_HOOK }}

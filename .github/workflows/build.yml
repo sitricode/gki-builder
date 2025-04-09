@@ -7,13 +7,11 @@ on:
         type: string
       SUSFS4KSU:
         type: string
-      Clang:
-        type: string
       BUILD_BOOTIMG:
         type: string
-      UPLOAD2GH:
-        type: string
       BUILD_LKMS:
+        type: string
+      UPLOAD2GH:
         type: string
       KSU_MANUAL_HOOK:
         type: string
@@ -38,8 +36,6 @@ on:
           - "None"
           - "Official"
           - "Next"
-          - "Rissu"
-          - "xx"
 
       SUSFS4KSU:
         description: SUSFS (KSU Needed)
@@ -50,15 +46,6 @@ on:
         description: KSU Manual Hook
         default: false
         type: boolean
-
-      Clang:
-        description: Select Compiler
-        default: ''
-        type: choice
-        options:
-          - "Default"
-          - "AOSP"
-          - "Custom"
 
       BUILD_BOOTIMG:
         description: Build Boot Image
@@ -79,21 +66,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      
-      # Optimize disk space before starting
-      - name: Free disk space
-        run: |
-          # Remove unnecessary large packages
-          sudo apt-get remove --purge -y azure-cli ghc* zulu* hhvm llvm* firefox google-chrome-stable dotnet* || true
-          sudo apt-get autoremove -y || true
-          sudo apt-get clean || true
-          
-          # Remove large directories
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
-          sudo rm -rf /usr/local/share/boost /usr/local/share/chromium /usr/local/share/powershell
-          
-          # Show available space
-          df -h
 
       - name: Set STATUS based on trigger type
         run: |
@@ -117,37 +89,6 @@ jobs:
           sudo apt update -y
           sudo apt install bc cpio flex bison aptitude gh git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
           sudo aptitude install libssl-dev -y
-
-      - name: Restore toolchain cache
-        id: toolchain_cache
-        uses: actions/cache/restore@v4
-        with:
-          path: tc
-          key: tc-${{ hashFiles('config.sh') }}
-          restore-keys: |
-            tc-
-
-      - name: Restore ccache from cache
-        uses: actions/cache/restore@v4
-        with:
-          path: ~/.ccache
-          key: ccache-${{ github.run_number }}
-          restore-keys: |
-            ccache-
-      
-      # Smart ccache optimization
-      - name: Set up ccache with optimizations
-        run: |
-          ccache --max-size=5G
-          # Use compression level 1 for better speed/size trade-off
-          ccache --set-config=compression=true
-          ccache --set-config=compression_level=1
-          # Enable direct mode for better hit rates
-          ccache --set-config=direct_mode=true
-          # Set sloppiness to get more cache hits
-          ccache --set-config=sloppiness=file_macro,time_macros,include_file_mtime,include_file_ctime
-          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
-          ccache --zero-stats
           
       - name: Build Kernel
         env:
@@ -155,7 +96,6 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           TOKEN: ${{ secrets.TOKEN }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          Clang: ${{ inputs.Clang }}
           USE_KSU_SUSFS: ${{ inputs.SUSFS4KSU }}
           BUILD_LKMS: ${{ inputs.BUILD_LKMS }}
           BUILD_BOOTIMG: ${{ inputs.BUILD_BOOTIMG }}
@@ -166,25 +106,10 @@ jobs:
         run: |
           chmod a+x *.sh
 
-          case "$Clang" in
-            "AOSP")
-              sed -i 's/^USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=false/' config.sh
-              sed -i 's/^USE_AOSP_CLANG=.*/USE_AOSP_CLANG=true/' config.sh
-              ;;
-            "Custom")
-              sed -i 's/^USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=true/' config.sh
-              sed -i 's/^USE_AOSP_CLANG=.*/USE_AOSP_CLANG=false/' config.sh
-              ;;
-          esac
+          if [[ "$TODO" == "defconfig" ]]; then
+              export GENERATE_DEFCONFIG=true ;;
+          fi
 
-          case "$TODO" in
-            "kernel")
-                : "continue" ;;
-            "defconfig")
-                export GENERATE_DEFCONFIG=true ;;
-          esac
-
-          export PATH="/usr/lib/ccache:$PATH"
           ./build.sh
 
       - name: Upload Artifact (AK3 and Images)
@@ -201,89 +126,3 @@ jobs:
           name: info-${{ github.run_number }}
           path: |
             artifacts/*.txt
-
-      - name: Save toolchain cache
-        if: always() && !cancelled()
-        uses: actions/cache/save@v4
-        with:
-          path: tc
-          key: tc-${{ hashFiles('config.sh') }}
-      
-      - name: Save ccache to cache
-        if: always() && !cancelled()
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.ccache
-          key: ccache-${{ github.run_number }}
-
-  cleanup:
-    needs: [build]
-    if: always() && !cancelled()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Delete old artifacts
-        uses: actions/github-script@v6
-        with:
-          script: |
-            async function deleteOldArtifacts() {
-              const perPage = 100;
-              let page = 1;
-              let artifacts = [];
-              
-              // Fetch all artifacts (with pagination)
-              while (true) {
-                const response = await github.rest.actions.listArtifactsForRepo({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  per_page: perPage,
-                  page: page,
-                });
-
-                if (response.data.artifacts.length === 0) break;
-                artifacts = artifacts.concat(response.data.artifacts);
-                page++;
-              }
-
-              // Sort artifacts by creation date (newest first)
-              artifacts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-              // Keep only the 5 most recent artifacts
-              const artifactsToDelete = artifacts.slice(5);
-
-              for (const artifact of artifactsToDelete) {
-                console.log(`Deleting artifact ${artifact.name} (ID: ${artifact.id})`);
-                await github.rest.actions.deleteArtifact({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  artifact_id: artifact.id,
-                });
-              }
-            }
-
-            await deleteOldArtifacts();
-
-      - name: Clean old caches
-        run: |
-          delete_old_caches() {
-            local PREFIX=$1
-            echo "Checking caches for: $PREFIX"
-            
-            # Ambil daftar cache dan filter berdasarkan prefix
-            CACHE_KEYS=$(gh cache list --json key,createdAt | jq -r "
-              map(select(.key | startswith(\"$PREFIX\"))) |
-              sort_by(.createdAt) |
-              reverse |
-              .[2:] | 
-              .[].key"
-            )
-            
-            for key in $CACHE_KEYS; do
-              echo "Deleting cache: $key"
-              gh cache delete "$key" --confirm
-            done
-          }
-
-          delete_old_caches "ccache-"
-          delete_old_caches "tc-"
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}

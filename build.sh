@@ -2,17 +2,7 @@
 workdir=$(pwd)
 exec > >(tee $workdir/build.log) 2>&1
 
-# Check for required variables
 set -e
-
-required_vars=("CHAT_ID" "TOKEN" "GH_TOKEN")
-
-for var in "${required_vars[@]}"; do
-    if [[ -z ${!var:-} ]]; then
-        echo "$var is not set!"
-        exit 1
-    fi
-done
 
 # ---------------
 # 	MAIN
@@ -24,7 +14,7 @@ source $workdir/config.sh
 source $workdir/functions.sh
 
 # Set up timezone
-sudo timedatectl set-timezone $TZ
+sudo timedatectl set-timezone $TIMEZONE
 
 cd $workdir
 
@@ -46,14 +36,11 @@ KERNEL_VERSION=$(make kernelversion)
 log "Setting KernelSU variant..."
 declare -A KSU_VARIANTS=(
     ["Official"]="KSU"
-    ["Rissu"]="RKSU"
     ["Next"]="KSUN"
-    ["xx"]="XXKSU"
 )
 VARIANT="${KSU_VARIANTS[$KSU]:-none}"
 
 # Append SUSFS to $VARIANT
-# if enabled
 [[ $USE_KSU_SUSFS == "true" && $VARIANT != "none" ]] && VARIANT+="xSUSFS"
 
 # Set ZIP_NAME with replacements
@@ -68,67 +55,28 @@ fi
 
 # Download Toolchains
 cd $workdir
-# Determine Clang source
-if [[ $USE_AOSP_CLANG == "true" ]]; then
-    if [[ $AOSP_CLANG_SOURCE =~ ^https?:// ]]; then
-        CLANG_URL="$AOSP_CLANG_SOURCE"
-    else
-        CLANG_URL="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-${AOSP_CLANG_SOURCE}.tar.gz"
-    fi
-elif [[ $USE_CUSTOM_CLANG == "true" ]]; then
-    CLANG_URL="$CUSTOM_CLANG_SOURCE"
-else
-    error "❌ No Clang toolchain selected. Set USE_AOSP_CLANG or USE_CUSTOM_CLANG."
-fi
-
-# Set CLANG_INFO
-CLANG_INFO="$CLANG_URL"
-if [[ $CLANG_URL != *.tar.* && -n $CUSTOM_CLANG_BRANCH ]]; then
-    CLANG_INFO+=" | $CUSTOM_CLANG_BRANCH"
-fi
-log "Clang used is $CLANG_INFO..."
 
 # Check if Clang is already installed
-CLANG_PATH="$workdir/tc"
+CLANG_PATH="$workdir/clang"
 
-if [[ ! -x $CLANG_PATH/bin/clang || ! -f $CLANG_PATH/VERSION || "$(cat $CLANG_PATH/VERSION)" != "$CLANG_INFO" ]]; then
-    log "Cache of $CLANG_INFO is not found."
-    log "🔽 Downloading Clang from ($CLANG_INFO)..."
-    rm -rf "$CLANG_PATH"
-
-    if [[ $USE_AOSP_CLANG == "true" || $CLANG_URL == *.tar.* ]]; then
-        mkdir -p "$CLANG_PATH"
-        wget -qO clang-tarball "$CLANG_URL" || error "Failed to download Clang."
-        tar -xf clang-tarball -C "$CLANG_PATH/" || error "Failed to extract Clang."
-        rm -f clang-tarball
-        while [ "$(find "$CLANG_PATH" -mindepth 1 -maxdepth 1 -type d | wc -l)" -eq 1 ]; do
-            single_dir=$(find "$CLANG_PATH" -mindepth 1 -maxdepth 1 -type d)
-            mv "$single_dir"/* "$CLANG_PATH"/
-            rm -rf "$single_dir"
-        done
-    else
-        git clone -q --depth=1 -b "$CUSTOM_CLANG_BRANCH" "$CLANG_URL" "$CLANG_PATH" || error "Clang download failed."
-    fi
-
-    echo "$CLANG_INFO" >"$CLANG_PATH/VERSION"
-else
-    log "✅ Using cached Clang: $CLANG_INFO."
+log "🔽 Downloading Clang..."
+mkdir -p "$CLANG_PATH"
+wget -qO clang-tarball "$CLANG_URL" || error "Failed to download Clang."
+tar -xf clang-tarball -C "$CLANG_PATH/" || error "Failed to extract Clang."
+rm -f clang-tarball
+if [[ $(ls -D $CLANG_PATH | wc -l) -eq 1 ]] && [[ $(ls -f $CLANG_PATH | wc -l) -eq 0 ]]; then
+    single_dir=$(find "$CLANG_PATH" -mindepth 1 -maxdepth 1 -type d)
+    mv "$single_dir"/* "$CLANG_PATH"/
+    rm -rf "$single_dir"
 fi
 
 # Add clang path into $PATH
 export PATH="$CLANG_PATH/bin:$PATH"
 
-# Ensure binutils (aarch64-linux-gnu) is available
-if ! find "$CLANG_PATH/bin" -name "aarch64-linux-gnu-*" | grep -q .; then
-    if find "$CLANG_PATH/binutils" -name "aarch64-linux-gnu-*" | grep -q .; then
-        log "✅ aarch64-linux-gnu found in $CLANG_PATH/binutils."
-    else
-        log "🔍 aarch64-linux-gnu not found. Cloning binutils..."
-        git clone -q --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 "$CLANG_PATH/binutils"
-    fi
-    export PATH="$CLANG_PATH/binutils:$PATH"
-else
-    log "✅ aarch64-linux-gnu found in $CLANG_PATH."
+# Clone Binutils if not available
+if ! find "$CLANG_PATH/bin" -name "aarch64-linux-gnu-*"; then
+    git clone -q --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 $workdir/gas
+    export PATH="$workdir/gas/bin:$PATH"
 fi
 
 # Extract clang version
@@ -201,9 +149,7 @@ if [[ $KSU != "None" ]]; then
 
     case "$KSU" in
     "Official") install_ksu tiann/KernelSU ;;
-    "Rissu") install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo susfs-v1.5.5 || echo main) ;;
     "Next") install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo next-susfs || echo next) ;;
-    "xx") install_ksu backslashxx/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo 12069+sus155 || echo magic) ;;
     *) error "Invalid KSU value: $KSU" ;;
     esac
 fi
@@ -225,25 +171,13 @@ elif [[ $KSU != "None" && $USE_KSU_SUSFS == "true" ]]; then
 
     # Apply kernel-side susfs patch
     log "Patching kernel-side susfs patch"
-    if ! patch -p1 <"$SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch" 2>&1 | tee ./patch.log; then
-        grep -q "*FAILED*fs/devpts/inode.c*" ./patch.log || error "❌ Patch failed (not due to legacy KSU manual hook)."
-        log "⚠️ Kernel susfs patch failed on fs/devpts/inode.c."
-        if [[ $USE_KSU_MANUAL_HOOK != "true" ]]; then
-            # WIP. this will be uncommented later... or never...
-            # patch -p1 /path/to/devpts_fix.patch || error "Fix patch failed."
-            error "❌ Your kernel-source is using manual hook but you dont enable it, sus_su would not work. exiting..."
-        fi
-
-        log "⏩ Using manual hook, skipping patching."
-        mv -f fs/devpts/inode.c.orig fs/devpts/inode.c
-    fi
-    rm -f ./patch.log
+    ipatch -p1 <"$SUSFS_PATCHES/50_add_susfs_in_gki-$GKI_VERSION.patch"
 
     # Apply patch to KernelSU (KSU Side)
     if [[ $KSU == "Official" ]]; then
         cd ../KernelSU
         log "Applying KernelSU-side susfs patch"
-        patch -p1 <$SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch || error "KernelSU-side susfs patch failed."
+        patch -p1 <$SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch
     fi
 fi
 
@@ -263,13 +197,19 @@ COMMIT_HASH=$(git rev-parse --short HEAD)
 config --file $DEFCONFIG_FILE \
     --set-str LOCALVERSION "-$KERNEL_NAME/$COMMIT_HASH"
 
+# Variables Needed before we build the kernel
+export KBUILD_BUILD_USER="$USER"
+export KBUILD_BUILD_HOST="$HOST"
+export KBUILD_BUILD_TIMESTAMP=$(date)
+BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%Y%m%d-%H%M")
+
 text=$(
     cat <<EOF
 *=== Kernel CI ===*
 *GKI Version*: $GKI_VERSION
 *Kernel Version*: $KERNEL_VERSION
 *Build Status*: $STATUS
-*Build Date*: $BUILD_DATE
+*Build Date*: $BUILD_DATE ($(date +"%Z"))
 *KSU Variant*: ${VARIANT}$([[ $KSU != "None" ]] && echo "
 *KSU Version*: $KSU_VERSION")
 *SUSFS*: $([[ $USE_KSU_SUSFS == "true" ]] && echo "$SUSFS_VERSION" || echo "none")
@@ -295,25 +235,10 @@ KERNEL_IMAGE=$workdir/out/arch/arm64/boot/Image
 cd $workdir/common
 
 set +e
-log "Building kernel..."
-
 log "Generating config..."
 make $MAKE_ARGS $KERNEL_DEFCONFIG
 
-# Merge additional configs
-if [[ -n $DEFCONFIGS_TO_MERGE ]]; then
-    for CONFIG in $DEFCONFIGS_TO_MERGE; do
-        log "Merging $CONFIG into the config file..."
-        make $MAKE_ARGS scripts/kconfig/merge_config.sh $CONFIG
-    done
-fi
-
-# Ensure valid config
-log "Ensuring config is valid..."
-make $MAKE_ARGS olddefconfig
-
 # Upload config file
-# if GENERATE_DEFCONFIG is true
 if [[ $GENERATE_DEFCONFIG == "true" ]]; then
     log "Uploading defconfig..."
     upload_file $workdir/out/.config
@@ -324,11 +249,10 @@ fi
 build_targets="Image"
 [[ $BUILD_BOOTIMG == "true" ]] && build_targets+=" Image.lz4 Image.gz"
 
-log "Building kernel image(s)..."
+log "Building kernel..."
 make $MAKE_ARGS $build_targets
 
 # Build kernel modules
-# if BUILD_LKMS is true
 if [[ $BUILD_LKMS == "true" ]]; then
     log "Building kernel modules..."
     make $MAKE_ARGS modules || lkms_failed=y
