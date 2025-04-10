@@ -109,6 +109,12 @@ log() {
 
 error() {
     echo -e "[ERROR] $*"
-    upload_file "$workdir/build.log"
+    if [[ -n $MESSAGE_ID ]]; then
+        reply_msg "$MESSAGE_ID" "❌ ERROR: $*"
+        reply_file "$MESSAGE_ID" "$workdir/build.log"
+    else
+        send_msg "❌ ERROR: $*"
+        upload_file "$workdir/build.log"
+    fi
     exit 1
 }

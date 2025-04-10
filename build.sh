@@ -19,9 +19,9 @@ sudo timedatectl set-timezone $TIMEZONE
 cd $workdir
 
 # Clone kernel patches
-log "Cloning kernel patch from (ChiseWaguri/kernel-patches) into $workdir/chise_patches"
+log "Cloning kernel patches from (ChiseWaguri/kernel-patches) into $workdir/chise_patches"
 git clone -q --depth=1 https://github.com/ChiseWaguri/kernel-patches chise_patches
-log "Cloning kernel patch from (WildPlusKernel/kernel-patches) into $workdir/wildplus_patches"
+log "Cloning kernel patches from (WildPlusKernel/kernel-patches) into $workdir/wildplus_patches"
 git clone -q --depth=1 https://github.com/WildPlusKernel/kernel_patches wildplus_patches
 
 # Clone kernel source
@@ -38,20 +38,16 @@ declare -A KSU_VARIANTS=(
     ["Official"]="KSU"
     ["Next"]="KSUN"
 )
-VARIANT="${KSU_VARIANTS[$KSU]:-none}"
+VARIANT="${KSU_VARIANTS[$KSU]:-NKSU}"
 
 # Append SUSFS to $VARIANT
-[[ $USE_KSU_SUSFS == "true" && $VARIANT != "none" ]] && VARIANT+="xSUSFS"
+[[ $USE_KSU_SUSFS == "true" && $VARIANT != "NKSU" ]] && VARIANT+="xSUSFS"
 
 # Set ZIP_NAME with replacements
 ZIP_NAME=${ZIP_NAME//KVER/$KERNEL_VERSION}
 
-# Handle VARIANT replacement in ZIP_NAME
-if [[ $VARIANT == "none" ]]; then
-    ZIP_NAME=${ZIP_NAME//-VARIANT/} # Remove "-VARIANT" if no variant
-else
-    ZIP_NAME=${ZIP_NAME//VARIANT/$VARIANT} # Replace VARIANT placeholder
-fi
+# Replace VARIANT placeholder
+ZIP_NAME=${ZIP_NAME//VARIANT/$VARIANT}
 
 # Download Toolchains
 cd $workdir
@@ -64,7 +60,9 @@ mkdir -p "$CLANG_PATH"
 wget -qO clang-tarball "$CLANG_URL" || error "Failed to download Clang."
 tar -xf clang-tarball -C "$CLANG_PATH/" || error "Failed to extract Clang."
 rm -f clang-tarball
-if [[ $(ls -D $CLANG_PATH | wc -l) -eq 1 ]] && [[ $(ls -f $CLANG_PATH | wc -l) -eq 0 ]]; then
+
+if [[ $(find "$CLANG_PATH" -mindepth 1 -maxdepth 1 -type d | wc -l) -eq 1 ]] &&
+    [[ $(find "$CLANG_PATH" -mindepth 1 -maxdepth 1 -type f | wc -l) -eq 0 ]]; then
     single_dir=$(find "$CLANG_PATH" -mindepth 1 -maxdepth 1 -type d)
     mv "$single_dir"/* "$CLANG_PATH"/
     rm -rf "$single_dir"
@@ -277,14 +275,6 @@ git clone -q --depth=1 $ANYKERNEL_REPO -b $ANYKERNEL_BRANCH anykernel
 
 # Set kernel string in anykernel
 sed -i "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${KERNEL_VERSION} (${BUILD_DATE}) ${VARIANT}/g" $workdir/anykernel/anykernel.sh
-if [[ $VARIANT == "none" ]]; then
-    OLD=$(grep 'kernel.string' $workdir/anykernel/anykernel.sh | cut -f2 -d '=')
-    NEW=$(
-        echo "$OLD" |
-            sed "s/none//g"
-    )
-    sed -i "s/kernel.string=.*/kernel.string=${NEW}/g" anykernel/anykernel.sh
-fi
 
 # Zipping
 cd anykernel
