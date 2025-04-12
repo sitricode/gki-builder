@@ -357,9 +357,11 @@ if [[ $LAST_BUILD == "true" ]]; then
     ) >>$workdir/artifacts/info.txt
 fi
 
-reply_msg "$MESSAGE_ID" "✅ Build Succeeded"
 if [[ $STATUS == "BETA" ]]; then
-    reply_msg "$MESSAGE_ID" "📦 [Download]($NIGHTLY_LINK)"
+    reply_msg "$MESSAGE_ID" "*== ✅ Build Succeeded ==*
+📦 [Download]($NIGHTLY_LINK)"
+else
+    reply_msg "$MESSAGE_ID" "✅ Build Succeeded"
 fi
 
 exit 0
