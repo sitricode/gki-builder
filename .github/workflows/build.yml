@@ -108,6 +108,10 @@ jobs:
               _error "Cannot use SuSFS without KernelSU"
           fi
 
+          if [[ $KSU == "None" && $USE_KSU_MANUAL_HOOK == "true" ]]; then
+            _error "Cannot use KSU Manual Hooks without KernelSU!"
+          fi
+
           if [[ $KSU == "Official" && $USE_KSU_MANUAL_HOOK == "true" ]]; then
               _error "KernelSU Official no longer supports manual hook"
           fi
