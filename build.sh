@@ -19,13 +19,15 @@ sudo timedatectl set-timezone $TIMEZONE
 cd $workdir
 
 # Clone kernel patches
-log "Cloning kernel patches from (ChiseWaguri/kernel-patches) into $workdir/chise_patches"
-git clone -q --depth=1 https://github.com/ChiseWaguri/kernel-patches chise_patches
-log "Cloning kernel patches from (WildPlusKernel/kernel-patches) into $workdir/wildplus_patches"
-git clone -q --depth=1 https://github.com/WildPlusKernel/kernel_patches wildplus_patches
+WILDPLUS_PATCHES=https://github.com/WildPlusKernel/kernel_patches
+CHISE_PATCHES=https://github.com/ChiseWaguri/kernel-patches
+log "Cloning kernel patches from $(simplify_gh_url "$CHISE_PATCHES")"
+git clone -q --depth=1 $CHISE_PATCHES chise_patches
+log "Cloning kernel patches from $(simplify_gh_url "$WILDPLUS_PATCHES")"
+git clone -q --depth=1 $WILDPLUS_PATCHES wildplus_patches
 
 # Clone kernel source
-log "Cloning kernel source from ($(basename "$KERNEL_REPO")) to $workdir/common"
+log "Cloning kernel source from $(simplify_gh_url "$KERNEL_REPO")"
 git clone -q --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
 
 # Extract kernel version
@@ -43,16 +45,12 @@ VARIANT="${KSU_VARIANTS[$KSU]:-NKSU}"
 # Append SUSFS to $VARIANT
 [[ $USE_KSU_SUSFS == "true" && $VARIANT != "NKSU" ]] && VARIANT+="xSUSFS"
 
-# Set ZIP_NAME with replacements
+# Replace Placeholder in zip name
 ZIP_NAME=${ZIP_NAME//KVER/$KERNEL_VERSION}
-
-# Replace VARIANT placeholder
 ZIP_NAME=${ZIP_NAME//VARIANT/$VARIANT}
 
-# Download Toolchains
+# Download Clang
 cd $workdir
-
-# Check if Clang is already installed
 CLANG_PATH="$workdir/clang"
 
 log "🔽 Downloading Clang..."
@@ -68,14 +66,11 @@ if [[ $(find "$CLANG_PATH" -mindepth 1 -maxdepth 1 -type d | wc -l) -eq 1 ]] &&
     rm -rf "$single_dir"
 fi
 
-# Add clang path into $PATH
 export PATH="$CLANG_PATH/bin:$PATH"
 
-# Clone Binutils if not available
-if ! find "$CLANG_PATH/bin" -name "aarch64-linux-gnu-*"; then
-    git clone -q --depth=1 https://android.googlesource.com/platform/prebuilts/gas/linux-x86 $workdir/gas
-    export PATH="$workdir/gas/bin:$PATH"
-fi
+# Clone GCC
+git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3 $workdir/gcc
+export PATH="$workdir/gcc/bin:$PATH"
 
 # Extract clang version
 COMPILER_STRING=$(clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ version//')
@@ -117,10 +112,6 @@ if [[ $USE_KSU_MANUAL_HOOK == "true" ]]; then
     config --file $DEFCONFIG_FILE --disable CONFIG_KSU_WITH_KPROBE
     config --file $DEFCONFIG_FILE --disable CONFIG_KSU_SUSFS_SUS_SU
 
-    if [[ $KSU == "Official" ]]; then
-        error "Official KernelSU has dropped manual hook support. Exiting..."
-    fi
-
     if grep -q "CONFIG_KSU" fs/exec.c; then
         log "Manual hook code already present in fs/exec.c. Skipping patch..."
     else
@@ -153,9 +144,7 @@ if [[ $KSU != "None" ]]; then
 fi
 
 # SUSFS for KSU setup
-if [[ $USE_KSU_SUSFS == "true" && $KSU == "None" ]]; then
-    error "You can't use SuSFS without KernelSU!"
-elif [[ $KSU != "None" && $USE_KSU_SUSFS == "true" ]]; then
+if [[ $KSU != "None" && $USE_KSU_SUSFS == "true" ]]; then
     log "Cloning susfs4ksu..."
     git clone -q --depth=1 https://gitlab.com/simonpunk/susfs4ksu -b gki-$GKI_VERSION $workdir/susfs4ksu
     SUSFS_PATCHES="$workdir/susfs4ksu/kernel_patches"
@@ -181,21 +170,17 @@ fi
 
 cd $workdir/common
 # Remove unnecessary code from scripts/setlocalversion
-if grep -q '[-]dirty' scripts/setlocalversion; then
-    sed -i 's/-dirty//' scripts/setlocalversion
-fi
-if grep -q 'echo "+"' scripts/setlocalversion; then
-    sed -i 's/echo "+"/# echo "+"/g' scripts/setlocalversion
-fi
+sed -i 's/-dirty//' scripts/setlocalversion
+sed -i 's/echo "+"/# echo "+"/g' scripts/setlocalversion
 
 # get latest commit hash
 COMMIT_HASH=$(git rev-parse --short HEAD)
 
-# Set localversion to the KERNEL_NAME variable
+# Set localversion
 config --file $DEFCONFIG_FILE \
     --set-str LOCALVERSION "-$KERNEL_NAME/$COMMIT_HASH"
 
-# Variables Needed before we build the kernel
+# Needed variables before we build the kernel
 export KBUILD_BUILD_USER="$USER"
 export KBUILD_BUILD_HOST="$HOST"
 export KBUILD_BUILD_TIMESTAMP=$(date)
@@ -204,13 +189,11 @@ BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%Y%m%d-%H%M")
 text=$(
     cat <<EOF
 *=== Kernel CI ===*
-*GKI Version*: $GKI_VERSION
 *Kernel Version*: $KERNEL_VERSION
 *Build Status*: $STATUS
 *Build Date*: $BUILD_DATE ($(date +"%Z"))
-*KSU Variant*: ${VARIANT}$([[ $KSU != "None" ]] && echo "
-*KSU Version*: $KSU_VERSION")
-*SUSFS*: $([[ $USE_KSU_SUSFS == "true" ]] && echo "$SUSFS_VERSION" || echo "none")
+*KSU*: ${KSU}$([[ $KSU != "None" ]] && echo " | $KSU_VERSION")
+*SUSFS*: $([[ $USE_KSU_SUSFS == "true" ]] && echo "$SUSFS_VERSION" || echo "None")
 *Compiler*: $COMPILER_STRING
 EOF
 )
@@ -224,8 +207,7 @@ ARCH=arm64
 LLVM=1
 LLVM_IAS=1
 O=$workdir/out
-CROSS_COMPILE=aarch64-linux-gnu-
-CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
+CROSS_COMPILE=aarch64-linux-
 "
 KERNEL_IMAGE=$workdir/out/arch/arm64/boot/Image
 
@@ -259,9 +241,7 @@ fi
 set -e
 
 if [[ ! -f $KERNEL_IMAGE || $lkms_failed == "y" ]]; then
-    reply_msg "$MESSAGE_ID" "❌ Build failed!"
-    reply_file "$MESSAGE_ID" "$workdir/build.log"
-    exit 1
+    error "Build Failed!"
 fi
 
 ## Post-compiling stuff
@@ -270,7 +250,7 @@ cd $workdir
 mkdir -p artifacts
 
 # Clone AnyKernel
-log "Cloning anykernel from $(basename "$ANYKERNEL_REPO") | $ANYKERNEL_BRANCH"
+log "Cloning anykernel from $(simplify_gh_url "$ANYKERNEL_REPO")"
 git clone -q --depth=1 $ANYKERNEL_REPO -b $ANYKERNEL_BRANCH anykernel
 
 # Set kernel string in anykernel
@@ -287,9 +267,9 @@ if [[ $BUILD_BOOTIMG == "true" ]]; then
     # Clone tools
     AOSP_MIRROR=https://android.googlesource.com
     BRANCH=main-kernel-build-2024
-    log "Cloning build tools into $(pwd)/build-tools"
+    log "Cloning build tools..."
     git clone -q --depth=1 $AOSP_MIRROR/kernel/prebuilts/build-tools -b $BRANCH build-tools
-    log "Cloning mkbootimg into $(pwd)/mkbootimg..."
+    log "Cloning mkbootimg..."
     git clone -q --depth=1 $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH mkbootimg
 
     # Variables

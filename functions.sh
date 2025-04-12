@@ -97,6 +97,12 @@ install_ksu() {
     KSU_VERSION="$latest_tag"
 }
 
+# simplify_gh_url <github-repository-url>
+simplify_gh_url() {
+    local URL="$1"
+    echo "$URL" | sed "s|https://github.com/||g" | sed "s|.git||g"
+}
+
 # Kernel scripts function
 config() {
     $workdir/common/scripts/config "$@"

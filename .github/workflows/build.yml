@@ -69,7 +69,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set STATUS based on trigger type
+      - name: Set Build status
         run: |
           case "${{ toJson(github.event.inputs) }}" in
             null)
@@ -82,10 +82,46 @@ jobs:
               ;;
           esac
 
-      - name: Verify STATUS
-        run: echo "Triggered by $TRIGGER, STATUS is set to $STATUS"
+      - name: Check inputs and secrets
+        env:
+          KSU: ${{ inputs.KernelSU }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          TOKEN: ${{ secrets.TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          USE_KSU_SUSFS: ${{ inputs.SUSFS4KSU }}
+          USE_KSU_MANUAL_HOOK: ${{ inputs.KSU_MANUAL_HOOK }}
+         run: |
+            ret=0
+            error() {
+                echo "❌ ERROR: $*"
+                let ret++
+            }
+            
+            if [[ -z "$CHAT_ID" ]]; then
+                error "Please set CHAT_ID secrets with your telegram chat id!"
+                echo
+            fi
+            if [[ -z "$TOKEN" ]]; then
+                error "Please set TOKEN secrets with your telegram bot token!"
+                echo
+            fi
+            if [[ -z "$GH_TOKEN" ]]; then
+                error "Please set GH_TOKEN secrets with your GitHub Personal Access Token!"
+                echo
+            fi
+            if [[ $KSU == "None" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
+                error "You can't use SuSFS without kernelsu!"
+                echo
+            fi
+            if [[ $KSU == "Official" ]] && [[ $USE_KSU_MANUAL_HOOK == "true" ]]; then
+                error "KSU has dropped support for manual hooks"
+                echo
+            fi
 
-      - name: Install dependencies
+            if [[ $ret -gt 0 ]]; then
+                exit $ret
+            fi
+      - name: Install needed dependencies
         run: |
           export MAN_DISABLE=true
           sudo apt update -y
