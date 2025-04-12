@@ -89,24 +89,32 @@ jobs:
           USE_KSU_MANUAL_HOOK: ${{ inputs.KSU_MANUAL_HOOK }}
         run: |
           ret=0
-          error() {
+          _error() {
               echo "❌ ERROR: $*"
-              ((ret++))
+              let ret++
           }
 
-          [[ -z "$CHAT_ID" ]] && error "Missing CHAT_ID secret (Telegram Chat ID)"
-          [[ -z "$TOKEN" ]] && error "Missing TOKEN secret (Telegram Bot Token)"
-          [[ -z "$GH_TOKEN" ]] && error "Missing GH_TOKEN secret (GitHub PAT)"
-
-          if [[ "$KSU" == "None" && "$USE_KSU_SUSFS" == "true" ]]; then
-              error "Cannot use SuSFS without KernelSU"
+          if [[ -z "$CHAT_ID" ]]; then
+            _error "Missing CHAT_ID secret (Telegram Chat ID)"
+          fi
+          if [[ -z "$TOKEN" ]]; then
+            _error "Missing TOKEN secret (Telegram Bot Token)"
+          fi
+          if [[ -z "$GH_TOKEN" ]]; then
+            _error "Missing GH_TOKEN secret (GitHub PAT)"
           fi
 
-          if [[ "$KSU" == "Official" && "$USE_KSU_MANUAL_HOOK" == "true" ]]; then
-              error "KernelSU Official no longer supports manual hook"
+          if [[ $KSU == "None" && $USE_KSU_SUSFS == "true" ]]; then
+              _error "Cannot use SuSFS without KernelSU"
           fi
 
-          [[ $ret -gt 0 ]] && exit $ret
+          if [[ $KSU == "Official" && $USE_KSU_MANUAL_HOOK == "true" ]]; then
+              _error "KernelSU Official no longer supports manual hook"
+          fi
+
+          if [[ $ret -gt 0 ]]; then
+            exit $ret
+          fi
 
       - name: Install Dependencies
         run: |
