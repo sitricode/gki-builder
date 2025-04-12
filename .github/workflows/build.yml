@@ -64,25 +64,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
-      - name: Set Build status
+      - name: Determine Build Status
         run: |
-          case "${{ toJson(github.event.inputs) }}" in
-            null)
-              echo "STATUS=RELEASE" >> $GITHUB_ENV
-              echo "TRIGGER=workflow_call" >> $GITHUB_ENV
-              ;;
-            *)
-              echo "STATUS=BETA" >> $GITHUB_ENV
-              echo "TRIGGER=workflow_dispatch" >> $GITHUB_ENV
-              ;;
-          esac
+          if [ "${{ toJson(github.event.inputs) }}" == "null" ]; then
+            echo "STATUS=RELEASE" >> $GITHUB_ENV
+            echo "TRIGGER=workflow_call" >> $GITHUB_ENV
+          else
+            echo "STATUS=BETA" >> $GITHUB_ENV
+            echo "TRIGGER=workflow_dispatch" >> $GITHUB_ENV
+          fi
 
-      - name: Check inputs and secrets
+      - name: Validate Inputs and Secrets
         env:
           KSU: ${{ inputs.KernelSU }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -90,45 +87,36 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           USE_KSU_SUSFS: ${{ inputs.SUSFS4KSU }}
           USE_KSU_MANUAL_HOOK: ${{ inputs.KSU_MANUAL_HOOK }}
-         run: |
-            ret=0
-            error() {
-                echo "❌ ERROR: $*"
-                let ret++
-            }
-            
-            if [[ -z "$CHAT_ID" ]]; then
-                error "Please set CHAT_ID secrets with your telegram chat id!"
-                echo
-            fi
-            if [[ -z "$TOKEN" ]]; then
-                error "Please set TOKEN secrets with your telegram bot token!"
-                echo
-            fi
-            if [[ -z "$GH_TOKEN" ]]; then
-                error "Please set GH_TOKEN secrets with your GitHub Personal Access Token!"
-                echo
-            fi
-            if [[ $KSU == "None" ]] && [[ $USE_KSU_SUSFS == "true" ]]; then
-                error "You can't use SuSFS without kernelsu!"
-                echo
-            fi
-            if [[ $KSU == "Official" ]] && [[ $USE_KSU_MANUAL_HOOK == "true" ]]; then
-                error "KSU has dropped support for manual hooks"
-                echo
-            fi
+        run: |
+          ret=0
+          error() {
+              echo "❌ ERROR: $*"
+              ((ret++))
+          }
 
-            if [[ $ret -gt 0 ]]; then
-                exit $ret
-            fi
-      - name: Install needed dependencies
+          [[ -z "$CHAT_ID" ]] && error "Missing CHAT_ID secret (Telegram Chat ID)"
+          [[ -z "$TOKEN" ]] && error "Missing TOKEN secret (Telegram Bot Token)"
+          [[ -z "$GH_TOKEN" ]] && error "Missing GH_TOKEN secret (GitHub PAT)"
+
+          if [[ "$KSU" == "None" && "$USE_KSU_SUSFS" == "true" ]]; then
+              error "Cannot use SuSFS without KernelSU"
+          fi
+
+          if [[ "$KSU" == "Official" && "$USE_KSU_MANUAL_HOOK" == "true" ]]; then
+              error "KernelSU Official no longer supports manual hook"
+          fi
+
+          [[ $ret -gt 0 ]] && exit $ret
+
+      - name: Install Dependencies
         run: |
           export MAN_DISABLE=true
           sudo apt update -y
-          sudo apt install bc cpio flex bison aptitude gh git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
-          sudo aptitude install libssl-dev -y
+          sudo apt install -y bc cpio flex bison aptitude gh git python-is-python3 \
+                              tar perl wget curl lz4 zstd libarchive-tools ccache
+          sudo aptitude install -y libssl-dev
 
-      - name: Build Kernel
+      - name: Run Build Script
         env:
           KSU: ${{ inputs.KernelSU }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -142,15 +130,11 @@ jobs:
           NIGHTLY_LINK: "https://nightly.link/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/runs/${{ github.run_id }}"
           TODO: ${{ inputs.TODO }}
         run: |
-          chmod a+x *.sh
-
-          if [[ "$TODO" == "defconfig" ]]; then
-              export GENERATE_DEFCONFIG=true
-          fi
-
+          chmod +x *.sh
+          [[ "$TODO" == "defconfig" ]] && export GENERATE_DEFCONFIG=true
           ./build.sh
 
-      - name: Upload Artifact (AK3 and Images)
+      - name: Upload Artifacts (ZIP & IMG)
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.BASE_NAME }}-${{ github.run_number }}
@@ -158,9 +142,8 @@ jobs:
             artifacts/*.zip
             artifacts/*.img
 
-      - name: Upload Artifact (Info file)
+      - name: Upload Artifacts (Info File)
         uses: actions/upload-artifact@v4
         with:
           name: info-${{ github.run_number }}
-          path: |
-            artifacts/*.txt
+          path: artifacts/*.txt
