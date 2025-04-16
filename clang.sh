@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # slim llvm
-SL_REPO="http://ftp.twaren.net/Unix/Kernel/tools/llvm/files/"
+SL_REPO="https://www.kernel.org/pub/tools/llvm/files/"
 # rv clang
 RC_REPO="https://api.github.com/repos/Rv-Project/RvClang/releases/latest"
 # aosp clang
