@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Kernel name
-KERNEL_NAME="QuartiX-v2"
+KERNEL_NAME="QuartiX"
 
 # GKI Version
 GKI_VERSION="android12-5.10"
