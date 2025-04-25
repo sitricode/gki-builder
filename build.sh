@@ -107,8 +107,6 @@ fi
 # Enable KPM for 🤓SU
 if [[ $KSU == "Suki" ]]; then
     config --enable CONFIG_KPM
-    curl -s https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.11-beta/patch_linux -o $workdir/patch-image
-    chmod a+x $workdir/patch-image
 fi
 
 # SUSFS for KSU setup
@@ -223,8 +221,10 @@ sed -i "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${LINUX_VERSION} (${BUIL
 # Patch the kernel Image for 🤓SU
 if [[ $KSU == "Suki" ]]; then
     mkdir suki && cd suki
+    wget -O patch_linux https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.11-beta/patch_linux
+    chmod a+x patch_linux
     cp $KERNEL_IMAGE .
-    sudo $workdir/patch-image
+    sudo ./patch_linux 2>&1
     mv oImage Image
     KERNEL_IMAGE=$(pwd)/Image
     cd -
