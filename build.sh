@@ -223,7 +223,7 @@ if [[ $KSU == "Suki" ]]; then
     mkdir suki && cd suki
     wget -O patch_linux https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.11-beta/patch_linux
     chmod a+x patch_linux
-    cp $KERNEL_IMAGE .
+    cp $KERNEL_IMAGE ./Image
     sudo ./patch_linux 2>&1
     mv oImage Image
     KERNEL_IMAGE=$(pwd)/Image
