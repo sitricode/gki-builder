@@ -9,8 +9,9 @@ jobs:
       matrix:
         variant:
           - { name: "NKSU", KernelSU: "None", SUSFS4KSU: "false", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
-          - { name: "KSUxSUSFS", KernelSU: "Official", SUSFS4KSU: "true", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
-          - { name: "KSUNxSUSFS", KernelSU: "Next", SUSFS4KSU: "true", KSU_MANUAL_HOOK: "true", LAST_BUILD: "true" }
+          - { name: "KSU", KernelSU: "Official", SUSFS4KSU: "true", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
+          - { name: "KSUN", KernelSU: "Next", SUSFS4KSU: "true", KSU_MANUAL_HOOK: "true", LAST_BUILD: "false" }
+          - { name: "SUKISU", KernelSU: "Suki", SUSFS4KSU: "true", KSU_MANUAL_HOOK: "false", LAST_BUILD: "true" }
     name: Build ${{ matrix.variant.name }}
     uses: ./.github/workflows/build.yml
     secrets: inherit
@@ -84,12 +85,13 @@ jobs:
           files: release_files/**/*
           body: |
             ### 📢 ${{ env.RELEASE_TAG }} Build
-            -> Linux ${{ env.KERNEL_VERSION }}
-            -> KSU Next ${{ env.KSU_NEXT_VERSION }}
+            -> Linux ${{ env.LINUX_VERSION }}
+            -> KernelSU Next ${{ env.KSU_NEXT_VERSION }}
             -> OG KernelSU ${{ env.KSU_OFC_VERSION }}
+            -> 🤓 SukiSU ${{ env.SUKISU_VERSION }}
             -> SUSFS ඞ ${{ env.SUSFS_VERSION }}
 
-            #### Notes
+            #### ✍️ Notes
             -> This kernel only for GKI ${{ env.GKI_VERSION }} devices
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

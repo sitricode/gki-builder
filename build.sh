@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
+set -e
+
 workdir=$(pwd)
 exec > >(tee $workdir/build.log) 2>&1
 
-set -e
-
-# ---------------
-# 	MAIN
-# ---------------
-# Import configuration
+# Import config and functions
 source $workdir/config.sh
-
-# Import functions
 source $workdir/functions.sh
 
 # Set up timezone
@@ -30,23 +25,24 @@ git clone -q --depth=1 $WILDPLUS_PATCHES wildplus_patches
 log "Cloning kernel source from $(simplify_gh_url "$KERNEL_REPO")"
 git clone -q --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
 
-# Extract kernel version
 cd $workdir/common
-KERNEL_VERSION=$(make kernelversion)
+LINUX_VERSION=$(make kernelversion)
+DEFCONFIG_FILE=$(find $workdir/common/arch/arm64/configs -name "$KERNEL_DEFCONFIG")
 
 # Set KernelSU variant
 log "Setting KernelSU variant..."
 declare -A KSU_VARIANTS=(
     ["Official"]="KSU"
     ["Next"]="KSUN"
+    ["Suki"]="SUKISU"
 )
 VARIANT="${KSU_VARIANTS[$KSU]:-NKSU}"
 
 # Append SUSFS to $VARIANT
-[[ $USE_KSU_SUSFS == "true" && $VARIANT != "NKSU" ]] && VARIANT+="xSUSFS"
+[[ $USE_KSU_SUSFS == "true" ]] && VARIANT+="xSUSFS"
 
 # Replace Placeholder in zip name
-ZIP_NAME=${ZIP_NAME//KVER/$KERNEL_VERSION}
+ZIP_NAME=${ZIP_NAME//KVER/$LINUX_VERSION}
 ZIP_NAME=${ZIP_NAME//VARIANT/$VARIANT}
 
 # Download Clang
@@ -84,14 +80,7 @@ if ! patch -p1 <$workdir/wildplus_patches/69_hide_stuff.patch; then
     mv -f fs/proc/base.c.orig fs/proc/base.c
 fi
 
-# Apply extra tmpfs config
-DEFCONFIG_FILE=$(find $workdir/common/arch/arm64/configs -name "$KERNEL_DEFCONFIG")
-log "Applying extra tmpfs config..."
-config --file $DEFCONFIG_FILE --enable CONFIG_TMPFS_XATTR
-config --file $DEFCONFIG_FILE --enable CONFIG_TMPFS_POSIX_ACL
-
 ## KernelSU setup
-
 if [[ $KSU != "None" ]]; then
     for ksupath in "drivers/staging/kernelsu" "drivers/kernelsu" "KernelSU"; do
         if [[ -d $ksupath ]]; then
@@ -138,13 +127,14 @@ if [[ $KSU != "None" ]]; then
 
     case "$KSU" in
     "Official") install_ksu tiann/KernelSU ;;
-    "Next") install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo next-susfs || echo next) ;;
+    "Next") install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo next-susfs) ;;
+    "Suki") install_ksu ShirkNeko/SukiSU-Ultra $([[ $USE_KSU_SUSFS == true ]] && echo susfs-stable) ;;
     *) error "Invalid KSU value: $KSU" ;;
     esac
 fi
 
 # SUSFS for KSU setup
-if [[ $KSU != "None" && $USE_KSU_SUSFS == "true" ]]; then
+if [[ $USE_KSU_SUSFS == "true" ]]; then
     log "Cloning susfs4ksu..."
     git clone -q --depth=1 https://gitlab.com/simonpunk/susfs4ksu -b gki-$GKI_VERSION $workdir/susfs4ksu
     SUSFS_PATCHES="$workdir/susfs4ksu/kernel_patches"
@@ -184,17 +174,17 @@ config --file $DEFCONFIG_FILE \
 export KBUILD_BUILD_USER="$USER"
 export KBUILD_BUILD_HOST="$HOST"
 export KBUILD_BUILD_TIMESTAMP=$(date)
-BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%Y%m%d-%H%M")
+YMD=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%Y%m%d")
 
 text=$(
     cat <<EOF
-*=== Kernel CI ===*
-*Kernel Version*: $KERNEL_VERSION
-*Build Status*: $STATUS
-*Build Date*: $BUILD_DATE ($(date +"%Z"))
-*KSU*: ${KSU}$([[ $KSU != "None" ]] && echo " | $KSU_VERSION")
-*SUSFS*: $([[ $USE_KSU_SUSFS == "true" ]] && echo "$SUSFS_VERSION" || echo "None")
-*Compiler*: $COMPILER_STRING
+*=== $KERNEL_NAME CI ===*
+🐧 *Linux Version*: \`$LINUX_VERSION\`
+🤔 *Build Status*: \`$STATUS\`
+📅 *Build Date*: \`$KBUILD_BUILD_TIMESTAMP\`
+🔥 *KSU*: \`${KSU}$([[ $KSU != "None" ]] && echo " | $KSU_VERSION")\`
+ඞ *SUSFS*: \`$([[ $USE_KSU_SUSFS == "true" ]] && echo "$SUSFS_VERSION" || echo "None")\`
+⚙️ *Compiler*: \`$COMPILER_STRING\`
 EOF
 )
 
@@ -254,7 +244,7 @@ log "Cloning anykernel from $(simplify_gh_url "$ANYKERNEL_REPO")"
 git clone -q --depth=1 $ANYKERNEL_REPO -b $ANYKERNEL_BRANCH anykernel
 
 # Set kernel string in anykernel
-sed -i "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${KERNEL_VERSION} (${BUILD_DATE}) ${VARIANT}/g" $workdir/anykernel/anykernel.sh
+sed -i "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${LINUX_VERSION} (${BUILD_DATE}) ${VARIANT}/g" $workdir/anykernel/anykernel.sh
 
 # Zipping
 cd anykernel
@@ -338,7 +328,7 @@ fi
 if [[ $BUILD_LKMS == "true" ]]; then
     mkdir lkm && cd lkm
     find "$workdir/out" -type f -name "*.ko" -exec cp {} . \; || true
-    [[ -n "$(ls -A ./*.ko 2>/dev/null)" ]] && zip -r9 "$workdir/artifacts/lkm-$KERNEL_VERSION.zip" ./*.ko || log "No LKMs found."
+    [[ -n "$(ls -A ./*.ko 2>/dev/null)" ]] && zip -r9 "$workdir/artifacts/lkm-$LINUX_VERSION.zip" ./*.ko || log "No LKMs found."
     cd ..
 fi
 
@@ -346,11 +336,12 @@ echo "BASE_NAME=$KERNEL_NAME-$VARIANT" >>$GITHUB_ENV
 
 if [[ $LAST_BUILD == "true" ]]; then
     (
-        echo "KERNEL_VERSION=$KERNEL_VERSION"
+        echo "LINUX_VERSION=$LINUX_VERSION"
         echo "SUSFS_VERSION=$(curl -s https://gitlab.com/simonpunk/susfs4ksu/-/raw/gki-${GKI_VERSION}/kernel_patches/include/linux/susfs.h | grep -E '^#define SUSFS_VERSION' | cut -d' ' -f3 | sed 's/"//g')"
         echo "KSU_OFC_VERSION=$(gh api repos/tiann/KernelSU/tags --jq '.[0].name')"
         echo "KSU_NEXT_VERSION=$(gh api repos/rifsxd/KernelSU-Next/tags --jq '.[0].name')"
-        echo "RELEASE_NAME=$KERNEL_NAME-$BUILD_DATE"
+        echo "SUKISU_VERSION=$(gh api repos/ShirkNeko/SukiSU-Ultra/tags --jq '.[0].name')"
+        echo "RELEASE_NAME=$KERNEL_NAME-$YMD"
         echo "KERNEL_NAME=$KERNEL_NAME"
         echo "GKI_VERSION=$GKI_VERSION"
         echo "RELEASE_REPO=$(echo "$GKI_RELEASES_REPO" | sed 's|https://github.com/||')"
@@ -358,8 +349,8 @@ if [[ $LAST_BUILD == "true" ]]; then
 fi
 
 if [[ $STATUS == "BETA" ]]; then
-    reply_msg "$MESSAGE_ID" "*== ✅ Build Succeeded ==*
-📦 [Download]($NIGHTLY_LINK)"
+    reply_msg "$MESSAGE_ID" "✅ Build Succeeded
+📦 Download: [here]($NIGHTLY_LINK)"
 else
     reply_msg "$MESSAGE_ID" "✅ Build Succeeded"
 fi

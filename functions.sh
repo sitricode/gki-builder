@@ -20,7 +20,6 @@ upload_file() {
         -F "disable_web_page_preview=true" \
         -F "parse_mode=markdown"
 }
-
 # reply_file <message_id> <path/to/file>
 reply_file() {
     local MSG_ID="$1"
@@ -38,7 +37,6 @@ reply_file() {
         -F "disable_web_page_preview=true" \
         -F "parse_mode=markdown"
 }
-
 # send_msg <text>
 send_msg() {
     local TEXT="$1"
@@ -49,7 +47,6 @@ send_msg() {
         -d "parse_mode=markdown" \
         -d "text=$TEXT"
 }
-
 # reply_msg <message_id> <text>
 reply_msg() {
     local MSG_ID="$1"
@@ -61,7 +58,6 @@ reply_msg() {
         -d "reply_to_message_id=${MSG_ID}" \
         -d "parse_mode=markdown"
 }
-
 # KernelSU installation function
 # install_ksu <username/repo-name> [<ref-or-branch>]
 install_ksu() {
@@ -96,23 +92,19 @@ install_ksu() {
     # Always set KSU_VERSION to the latest tag
     KSU_VERSION="$latest_tag"
 }
-
 # simplify_gh_url <github-repository-url>
 simplify_gh_url() {
     local URL="$1"
     echo "$URL" | sed "s|https://github.com/||g" | sed "s|.git||g"
 }
-
 # Kernel scripts function
 config() {
     $workdir/common/scripts/config "$@"
 }
-
 # Logging function
 log() {
     echo -e "[LOG] $*"
 }
-
 error() {
     echo -e "[ERROR] $*"
     if [[ -n $MESSAGE_ID ]]; then

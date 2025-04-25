@@ -38,6 +38,7 @@ on:
           - "None"
           - "Official"
           - "Next"
+          - "Suki"
 
       SUSFS4KSU:
         description: SUSFS (KSU Needed)
@@ -115,6 +116,10 @@ jobs:
           if [[ $KSU == "Official" && $USE_KSU_MANUAL_HOOK == "true" ]]; then
               _error "KernelSU Official no longer supports manual hook"
           fi
+          
+          if [[ $KSU == "Suki" && $USE_KSU_MANUAL_HOOK == "true" ]]; then
+            _error "SukiSU doesn't support manual hook"
+          fi
 
           if [[ $ret -gt 0 ]]; then
             exit $ret
@@ -125,7 +130,7 @@ jobs:
           export MAN_DISABLE=true
           sudo apt update -y
           sudo apt install -y bc cpio flex bison aptitude gh git python-is-python3 \
-                              tar perl wget curl lz4 zstd libarchive-tools ccache
+                              tar perl wget curl lz4 zstd libarchive-tools
           sudo aptitude install -y libssl-dev
 
       - name: Run Build Script
