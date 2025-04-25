@@ -12,6 +12,11 @@ source $workdir/functions.sh
 sudo timedatectl set-timezone $TIMEZONE
 
 cd $workdir
+# Clone kernel patches
+WILDPLUS_PATCHES=https://github.com/WildPlusKernel/kernel_patches
+log "Cloning kernel patches from $(simplify_gh_url "$WILDPLUS_PATCHES")"
+git clone -q --depth=1 $WILDPLUS_PATCHES wildplus_patches
+
 # Clone kernel source
 log "Cloning kernel source from $(simplify_gh_url "$KERNEL_REPO")"
 git clone -q --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
