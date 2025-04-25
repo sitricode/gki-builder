@@ -8,10 +8,10 @@ jobs:
     strategy:
       matrix:
         variant:
-          - { name: "NKSU", KernelSU: "None", SUSFS4KSU: "false", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
-          - { name: "KSU", KernelSU: "Official", SUSFS4KSU: "true", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
-          - { name: "KSUN", KernelSU: "Next", SUSFS4KSU: "true", KSU_MANUAL_HOOK: "true", LAST_BUILD: "false" }
-          - { name: "SUKISU", KernelSU: "Suki", SUSFS4KSU: "true", KSU_MANUAL_HOOK: "false", LAST_BUILD: "true" }
+          - { name: "NKSU", KernelSU: "None", SUSFS4KSU: "false", LAST_BUILD: "false" }
+          - { name: "KSU", KernelSU: "Official", SUSFS4KSU: "true", LAST_BUILD: "false" }
+          - { name: "KSUN", KernelSU: "Next", SUSFS4KSU: "true", LAST_BUILD: "false" }
+          - { name: "SUKISU", KernelSU: "Suki", SUSFS4KSU: "true", LAST_BUILD: "true" }
     name: Build ${{ matrix.variant.name }}
     uses: ./.github/workflows/build.yml
     secrets: inherit
@@ -20,7 +20,6 @@ jobs:
       SUSFS4KSU: ${{ matrix.variant.SUSFS4KSU }}
       BUILD_BOOTIMG: "true"
       BUILD_LKMS: "false"
-      KSU_MANUAL_HOOK: ${{ matrix.variant.KSU_MANUAL_HOOK }}
       LAST_BUILD: ${{ matrix.variant.LAST_BUILD }}
       TODO: kernel
 
