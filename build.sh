@@ -12,15 +12,6 @@ source $workdir/functions.sh
 sudo timedatectl set-timezone $TIMEZONE
 
 cd $workdir
-
-# Clone kernel patches
-WILDPLUS_PATCHES=https://github.com/WildPlusKernel/kernel_patches
-CHISE_PATCHES=https://github.com/ChiseWaguri/kernel-patches
-log "Cloning kernel patches from $(simplify_gh_url "$CHISE_PATCHES")"
-git clone -q --depth=1 $CHISE_PATCHES chise_patches
-log "Cloning kernel patches from $(simplify_gh_url "$WILDPLUS_PATCHES")"
-git clone -q --depth=1 $WILDPLUS_PATCHES wildplus_patches
-
 # Clone kernel source
 log "Cloning kernel source from $(simplify_gh_url "$KERNEL_REPO")"
 git clone -q --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
@@ -93,31 +84,6 @@ if [[ $KSU != "None" ]]; then
             rm -rf $ksupath
         fi
     done
-fi
-
-# Apply config for KernelSU manual hook (Requires supported KernelSU)
-if [[ $USE_KSU_MANUAL_HOOK == "true" ]]; then
-    config --file $DEFCONFIG_FILE --enable CONFIG_KSU_MANUAL_HOOK
-    config --file $DEFCONFIG_FILE --disable CONFIG_KSU_WITH_KPROBE
-    config --file $DEFCONFIG_FILE --disable CONFIG_KSU_SUSFS_SUS_SU
-
-    if grep -q "CONFIG_KSU" fs/exec.c; then
-        log "Manual hook code already present in fs/exec.c. Skipping patch..."
-    else
-        log "Applying manual-hook patch to the kernel source..."
-        if ! patch -p1 <"$workdir/wildplus_patches/next/syscall_hooks.patch"; then
-            log "❌ Patch rejected. Reverting changes..."
-            for file in fs/exec.c fs/open.c fs/read_write.c fs/stat.c \
-                drivers/input/input.c drivers/tty/pty.c; do
-                [[ -f "$file.orig" ]] && mv -f "$file.orig" "$file"
-            done
-            log "Using KPROBE HOOK instead..."
-            config --file $DEFCONFIG_FILE --disable CONFIG_KSU_MANUAL_HOOK
-            config --file $DEFCONFIG_FILE --enable CONFIG_KSU_WITH_KPROBE
-            config --file $DEFCONFIG_FILE --enable CONFIG_KSU_SUSFS_SUS_SU
-
-        fi
-    fi
 fi
 
 # Install KernelSU driver

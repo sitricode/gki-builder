@@ -13,8 +13,6 @@ on:
         type: string
       UPLOAD2GH:
         type: string
-      KSU_MANUAL_HOOK:
-        type: string
       LAST_BUILD:
         type: string
       TODO:
@@ -42,11 +40,6 @@ on:
 
       SUSFS4KSU:
         description: SUSFS (KSU Needed)
-        default: false
-        type: boolean
-
-      KSU_MANUAL_HOOK:
-        description: KSU Manual Hook
         default: false
         type: boolean
 
@@ -87,7 +80,6 @@ jobs:
           TOKEN: ${{ secrets.TOKEN }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           USE_KSU_SUSFS: ${{ inputs.SUSFS4KSU }}
-          USE_KSU_MANUAL_HOOK: ${{ inputs.KSU_MANUAL_HOOK }}
         run: |
           ret=0
           _error() {
@@ -107,18 +99,6 @@ jobs:
 
           if [[ $KSU == "None" && $USE_KSU_SUSFS == "true" ]]; then
               _error "Cannot use SuSFS without KernelSU"
-          fi
-
-          if [[ $KSU == "None" && $USE_KSU_MANUAL_HOOK == "true" ]]; then
-            _error "Cannot use KSU Manual Hooks without KernelSU!"
-          fi
-
-          if [[ $KSU == "Official" && $USE_KSU_MANUAL_HOOK == "true" ]]; then
-              _error "KernelSU Official no longer supports manual hook"
-          fi
-          
-          if [[ $KSU == "Suki" && $USE_KSU_MANUAL_HOOK == "true" ]]; then
-            _error "SukiSU doesn't support manual hook"
           fi
 
           if [[ $ret -gt 0 ]]; then
@@ -142,7 +122,6 @@ jobs:
           USE_KSU_SUSFS: ${{ inputs.SUSFS4KSU }}
           BUILD_LKMS: ${{ inputs.BUILD_LKMS }}
           BUILD_BOOTIMG: ${{ inputs.BUILD_BOOTIMG }}
-          USE_KSU_MANUAL_HOOK: ${{ inputs.KSU_MANUAL_HOOK }}
           LAST_BUILD: ${{ inputs.LAST_BUILD }}
           NIGHTLY_LINK: "https://nightly.link/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/runs/${{ github.run_id }}"
           TODO: ${{ inputs.TODO }}
