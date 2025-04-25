@@ -99,7 +99,7 @@ simplify_gh_url() {
 }
 # Kernel scripts function
 config() {
-    $workdir/common/scripts/config "$@"
+    $workdir/common/scripts/config --file $DEFCONFIG_FILE $@
 }
 # Logging function
 log() {

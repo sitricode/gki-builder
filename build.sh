@@ -99,6 +99,13 @@ if [[ $KSU != "None" ]]; then
     esac
 fi
 
+# Enable KPM for 🤓SU
+if [[ $KSU == "Suki" ]]; then
+    config --enable CONFIG_KPM
+    curl -s https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.11-beta/patch_linux -o $workdir/patch-image
+    chmod a+x $workdir/patch-image
+fi
+
 # SUSFS for KSU setup
 if [[ $USE_KSU_SUSFS == "true" ]]; then
     log "Cloning susfs4ksu..."
@@ -133,8 +140,7 @@ sed -i 's/echo "+"/# echo "+"/g' scripts/setlocalversion
 COMMIT_HASH=$(git rev-parse --short HEAD)
 
 # Set localversion
-config --file $DEFCONFIG_FILE \
-    --set-str LOCALVERSION "-$KERNEL_NAME/$COMMIT_HASH"
+config --set-str LOCALVERSION "-$KERNEL_NAME/$COMMIT_HASH"
 
 # Needed variables before we build the kernel
 export KBUILD_BUILD_USER="$USER"
@@ -182,11 +188,8 @@ if [[ $GENERATE_DEFCONFIG == "true" ]]; then
 fi
 
 # Build the actual kernel
-build_targets="Image"
-[[ $BUILD_BOOTIMG == "true" ]] && build_targets+=" Image.lz4 Image.gz"
-
 log "Building kernel..."
-make $MAKE_ARGS $build_targets
+make $MAKE_ARGS Image
 
 # Build kernel modules
 if [[ $BUILD_LKMS == "true" ]]; then
@@ -212,6 +215,16 @@ git clone -q --depth=1 $ANYKERNEL_REPO -b $ANYKERNEL_BRANCH anykernel
 # Set kernel string in anykernel
 sed -i "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${LINUX_VERSION} (${BUILD_DATE}) ${VARIANT}/g" $workdir/anykernel/anykernel.sh
 
+# Patch the kernel Image for 🤓SU
+if [[ $KSU == "Suki" ]]; then
+    mkdir suki && cd suki
+    cp $KERNEL_IMAGE .
+    sudo $workdir/patch-image
+    mv oImage Image
+    KERNEL_IMAGE=$(pwd)/Image
+    cd -
+fi
+
 # Zipping
 cd anykernel
 log "Zipping anykernel..."
@@ -229,7 +242,6 @@ if [[ $BUILD_BOOTIMG == "true" ]]; then
     git clone -q --depth=1 $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH mkbootimg
 
     # Variables
-    KERNEL_IMAGES=$(echo $workdir/out/arch/arm64/boot/Image*)
     AVBTOOL=$workdir/build-tools/linux-x86/bin/avbtool
     MKBOOTIMG=$workdir/mkbootimg/mkbootimg.py
     UNPACK_BOOTIMG=$workdir/mkbootimg/unpack_bootimg.py
@@ -265,15 +277,17 @@ if [[ $BUILD_BOOTIMG == "true" ]]; then
 
     # Prepare boot image
     mkdir -p bootimg && cd bootimg
-    cp $KERNEL_IMAGES .
+    cp $KERNEL_IMAGE .
+    gzip -n -f -9 -c Image >Image.gz
+    lz4 -l -12 --favor-decSpeed Image Image.lz4
 
     # Download and unpack prebuilt GKI
     log "Downloading prebuilt GKI..."
     wget -qO gki.zip https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-2023-01_r1.zip
     log "Unpacking prebuilt GKI..."
     unzip -q gki.zip && rm gki.zip
-    $UNPACK_BOOTIMG --boot_img=./boot-5.10.img
-    rm ./boot-5.10.img
+    $UNPACK_BOOTIMG --boot_img=boot-5.10.img
+    rm boot-5.10.img
 
     # Generate and sign boot images in multiple formats (raw, lz4, gz)
     for format in raw lz4 gz; do
