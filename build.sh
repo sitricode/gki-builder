@@ -149,7 +149,9 @@ config --set-str LOCALVERSION "-$KERNEL_NAME/$COMMIT_HASH"
 export KBUILD_BUILD_USER="$USER"
 export KBUILD_BUILD_HOST="$HOST"
 export KBUILD_BUILD_TIMESTAMP=$(date)
-YMD=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%Y%m%d")
+if [[ $STATUS == "BETA" ]]; then
+    BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%Y%m%d-%H%M")
+fi
 
 text=$(
     cat <<EOF
@@ -216,7 +218,15 @@ log "Cloning anykernel from $(simplify_gh_url "$ANYKERNEL_REPO")"
 git clone -q --depth=1 $ANYKERNEL_REPO -b $ANYKERNEL_BRANCH anykernel
 
 # Set kernel string in anykernel
-sed -i "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${LINUX_VERSION} (${BUILD_DATE}) ${VARIANT}/g" $workdir/anykernel/anykernel.sh
+if [[ $STATUS == "BETA" ]]; then
+    sed -i \
+        "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${LINUX_VERSION} (${BUILD_DATE}) ${VARIANT}/g" \
+        $workdir/anykernel/anykernel.sh
+else
+    sed -i \
+        "s/kernel.string=.*/kernel.string=${KERNEL_NAME} ${LINUX_VERSION} ${VARIANT}/g" \
+        $workdir/anykernel/anykernel.sh
+fi
 
 # Patch the kernel Image for 🤓SU
 if [[ $KSU == "Suki" ]]; then
@@ -326,10 +336,9 @@ if [[ $LAST_BUILD == "true" ]]; then
         echo "KSU_OFC_VERSION=$(gh api repos/tiann/KernelSU/tags --jq '.[0].name')"
         echo "KSU_NEXT_VERSION=$(gh api repos/rifsxd/KernelSU-Next/tags --jq '.[0].name')"
         echo "SUKISU_VERSION=$(gh api repos/ShirkNeko/SukiSU-Ultra/tags --jq '.[0].name')"
-        echo "RELEASE_NAME=$KERNEL_NAME-$YMD"
         echo "KERNEL_NAME=$KERNEL_NAME"
         echo "GKI_VERSION=$GKI_VERSION"
-        echo "RELEASE_REPO=$(echo "$GKI_RELEASES_REPO" | sed 's|https://github.com/||')"
+        echo "RELEASE_REPO=$(simplify_gh_url "$GKI_RELEASES_REPO")"
     ) >>$workdir/artifacts/info.txt
 fi
 
