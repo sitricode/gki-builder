@@ -32,7 +32,7 @@ on:
 
       KernelSU:
         description: KernelSU Variant
-        default: ''
+        default: "Suki"
         type: choice
         options:
           - "None"
@@ -42,12 +42,12 @@ on:
 
       SUSFS4KSU:
         description: SUSFS (KSU Needed)
-        default: false
+        default: true
         type: boolean
 
       KSU_MANUAL_HOOK:
         description: KSU Manual Hook
-        default: false
+        default: true
         type: boolean
 
       BUILD_BOOTIMG:
