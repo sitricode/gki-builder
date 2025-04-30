@@ -94,9 +94,9 @@ fi
 
 # Apply config for KernelSU manual hook (Requires supported KernelSU)
 if [[ $USE_KSU_MANUAL_HOOK == "true" ]]; then
-    config --file $DEFCONFIG_FILE --enable CONFIG_KSU_MANUAL_HOOK
-    config --file $DEFCONFIG_FILE --disable CONFIG_KSU_WITH_KPROBE
-    config --file $DEFCONFIG_FILE --disable CONFIG_KSU_SUSFS_SUS_SU
+    config --enable CONFIG_KSU_MANUAL_HOOK
+    config --disable CONFIG_KSU_WITH_KPROBE
+    config --disable CONFIG_KSU_SUSFS_SUS_SU
 
     if grep -q "CONFIG_KSU" fs/exec.c; then
         log "Manual hook code already present in fs/exec.c. Skipping patch..."
@@ -109,9 +109,9 @@ if [[ $USE_KSU_MANUAL_HOOK == "true" ]]; then
                 [[ -f "$file.orig" ]] && mv -f "$file.orig" "$file"
             done
             log "Using KPROBE HOOK instead..."
-            config --file $DEFCONFIG_FILE --disable CONFIG_KSU_MANUAL_HOOK
-            config --file $DEFCONFIG_FILE --enable CONFIG_KSU_WITH_KPROBE
-            config --file $DEFCONFIG_FILE --enable CONFIG_KSU_SUSFS_SUS_SU
+            config --disable CONFIG_KSU_MANUAL_HOOK
+            config --enable CONFIG_KSU_WITH_KPROBE
+            config --enable CONFIG_KSU_SUSFS_SUS_SU
 
         fi
     fi
