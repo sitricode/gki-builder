@@ -31,7 +31,7 @@ DEFCONFIGS="
 " # Leave this empty if you don't need to merge any configs
 
 # Releases repository
-GKI_RELEASES_REPO="https://github.com/hazepynut/quartix-releases"
+GKI_RELEASES_REPO="https://github.com/sitricode/gki"
 
 # AOSP Clang
 USE_AOSP_CLANG="false"
