@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
 # Kernel name
-KERNEL_NAME="QuartiX-v2"
+KERNEL_NAME="Mahiru"
 
 # GKI Version
 GKI_VERSION="android12-5.10"
 
 # Build variables
 export TZ="Asia/Makassar"
-export KBUILD_BUILD_USER="eraselk"
+export KBUILD_BUILD_USER="sitri"
 export KBUILD_BUILD_HOST="$KERNEL_NAME"
 export KBUILD_BUILD_TIMESTAMP=$(date)
 
@@ -17,7 +17,7 @@ ANYKERNEL_REPO="https://github.com/hazepynut/anykernel"
 ANYKERNEL_BRANCH="gki"
 
 # Kernel
-KERNEL_REPO="https://github.com/hazepynut/kernel_new"
+KERNEL_REPO="https://github.com/Shirayuki39/kernel_new"
 KERNEL_BRANCH="android12-5.10"
 KERNEL_DEFCONFIG="gki_defconfig"
 DEFCONFIG_FILE="$workdir/common/arch/arm64/configs/$KERNEL_DEFCONFIG"
