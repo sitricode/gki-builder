@@ -1,0 +1,223 @@
+name: Build GKI
+
+on:
+  workflow_call:
+    inputs:
+      KernelSU:
+        type: string
+      SUSFS4KSU:
+        type: string
+      Clang:
+        type: string
+      BUILD_BOOTIMG:
+        type: string
+      UPLOAD2GH:
+        type: string
+      BUILD_LKMS:
+        type: string
+      KSU_MANUAL_HOOK:
+        type: string
+      LAST_BUILD:
+        type: string
+
+  workflow_dispatch:
+    inputs:
+      TODO:
+        description: To do
+        default: ''
+        type: choice
+        options:
+          - "kernel"
+          - "defconfig"
+
+      KernelSU:
+        description: KernelSU Variant
+        default: ''
+        type: choice
+        options:
+          - "None"
+          - "Official"
+          - "Next"
+          - "Rissu"
+          - "xx"
+
+      SUSFS4KSU:
+        description: SUSFS (KSU Needed)
+        default: false
+        type: boolean
+
+      KSU_MANUAL_HOOK:
+        description: KSU Manual Hook
+        default: false
+        type: boolean
+
+      Clang:
+        description: Select Compiler
+        default: ''
+        type: choice
+        options:
+          - "Default"
+          - "AOSP"
+          - "Custom"
+
+      BUILD_BOOTIMG:
+        description: Build Boot Image
+        default: false
+        type: boolean
+
+      BUILD_LKMS:
+        description: Build Kernel Modules
+        default: false
+        type: boolean
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set STATUS based on trigger type
+        run: |
+          case "${{ toJson(github.event.inputs) }}" in
+            null)
+              echo "STATUS=RELEASE" >> $GITHUB_ENV
+              echo "TRIGGER=workflow_call" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "STATUS=BETA" >> $GITHUB_ENV
+              echo "TRIGGER=workflow_dispatch" >> $GITHUB_ENV
+              ;;
+          esac
+
+      - name: Verify STATUS
+        run: echo "Triggered by $TRIGGER, STATUS is set to $STATUS"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install dependencies
+        run: |
+          export MAN_DISABLE=true
+          sudo apt update -y
+          sudo apt install bc cpio flex bison aptitude gh git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
+          sudo aptitude install libssl-dev -y
+
+      - name: Set Swap Space
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 10
+
+      - name: Restore Toolchain Cache
+        uses: actions/cache/restore@v4
+        with:
+          path: tc
+          key: tc-
+          restore-keys: |
+            tc-
+
+      - name: Set up ccache
+        run: |
+          ccache --max-size=2G
+          ccache --set-config=compression=true
+          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+          ccache --version
+
+      - name: Restore ccache from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.run_number }}
+          restore-keys: |
+            ccache-
+
+      - name: Build Kernel
+        env:
+          KSU: ${{ inputs.KernelSU }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          TOKEN: ${{ secrets.TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          Clang: ${{ inputs.Clang }}
+          USE_KSU_SUSFS: ${{ inputs.SUSFS4KSU }}
+          BUILD_LKMS: ${{ inputs.BUILD_LKMS }}
+          BUILD_BOOTIMG: ${{ inputs.BUILD_BOOTIMG }}
+          USE_KSU_MANUAL_HOOK: ${{ inputs.KSU_MANUAL_HOOK }}
+          LAST_BUILD: ${{ inputs.LAST_BUILD }}
+          NIGHTLY_LINK: "https://nightly.link/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/runs/${{ github.run_id }}"
+          TODO: ${{ inputs.TODO }}
+        run: |
+          chmod a+x *.sh
+
+          case "$Clang" in
+            "AOSP")
+              sed -i 's/^USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=false/' config.sh
+              sed -i 's/^USE_AOSP_CLANG=.*/USE_AOSP_CLANG=true/' config.sh
+              ;;
+            "Custom")
+              sed -i 's/^USE_CUSTOM_CLANG=.*/USE_CUSTOM_CLANG=true/' config.sh
+              sed -i 's/^USE_AOSP_CLANG=.*/USE_AOSP_CLANG=false/' config.sh
+              ;;
+          esac
+
+          case "$TODO" in
+            "kernel")
+                : "continue" ;;
+            "defconfig")
+                export GENERATE_DEFCONFIG=true ;;
+          esac
+
+          export PATH="/usr/lib/ccache:$PATH"
+          ./build.sh
+
+      - name: Upload Artifact (AK3 and Images)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BASE_NAME }}-${{ github.run_number }}
+          retention-days: 1
+          path: |
+            artifacts/*.zip
+            artifacts/*.img
+
+      - name: Upload Artifact (Info file)
+        if: ${{ env.STATUS }} == 'RELEASE'
+        uses: actions/upload-artifact@v4
+        with:
+          name: info-${{ github.run_number }}
+          retention-days: 1
+          path: |
+            artifacts/*.txt
+
+      - name: Save Toolchain Cache
+        if: always() && !cancelled()
+        uses: actions/cache/save@v4
+        with:
+          path: tc
+          key: tc-${{ hashFiles('tc/bin/clang') }}
+
+      - name: Save ccache to cache
+        if: always() && !cancelled()
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.run_number }}
+
+      - name: Delete Old Kernel & Toolchain Cache (Keep 2 Newest Each)
+        run: |
+          delete_old_caches() {
+            local PREFIX=$1
+            echo "Checking caches for: $PREFIX"
+            CACHE_KEYS=$(gh cache list --json key,createdAt | jq -r "
+              sort_by(.createdAt) | 
+              reverse | 
+              map(select(.key | startswith(\"$PREFIX\"))) | 
+              .[2:] | 
+              .[].key"
+            )
+            for key in $CACHE_KEYS; do
+              echo "Deleting cache: $key"
+              gh cache delete "$key"
+            done
+          }
+
+          delete_old_caches "ccache-"
+          delete_old_caches "tc-"
