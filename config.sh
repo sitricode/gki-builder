@@ -17,7 +17,7 @@ ANYKERNEL_REPO="https://github.com/hazepynut/anykernel"
 ANYKERNEL_BRANCH="gki"
 
 # Kernel
-KERNEL_REPO="https://github.com/Shirayuki39/kernel_new"
+KERNEL_REPO="https://github.com/sitricode/mahiru32"
 KERNEL_BRANCH="android12-5.10"
 KERNEL_DEFCONFIG="gki_defconfig"
 DEFCONFIG_FILE="$workdir/common/arch/arm64/configs/$KERNEL_DEFCONFIG"
