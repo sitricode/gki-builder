@@ -1,0 +1,114 @@
+name: Release Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        variant:
+          - { name: "Non-KSU", KernelSU: "None", SUSFS4KSU: "false", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
+          - { name: "KSUxSuSFS", KernelSU: "Official", SUSFS4KSU: "true", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
+          - { name: "KSU-Next with SuSFS", KernelSU: "Next", SUSFS4KSU: "true", KSU_MANUAL_HOOK: "true", LAST_BUILD: "true" }
+    name: Build ${{ matrix.variant.name }}
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+    with:
+      KernelSU: ${{ matrix.variant.KernelSU }}
+      SUSFS4KSU: ${{ matrix.variant.SUSFS4KSU }}
+      Clang: Default
+      BUILD_BOOTIMG: "true"
+      BUILD_LKMS: "false"
+      KSU_MANUAL_HOOK: ${{ matrix.variant.KSU_MANUAL_HOOK }}
+      LAST_BUILD: ${{ matrix.variant.LAST_BUILD }}
+
+  release:
+    name: Create Unified Release
+    needs: build  # Waits for all build jobs to be complete
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release_files
+
+      - name: List Downloaded Files
+        run: ls -R release_files/
+
+      - name: Extract variables from info.txt
+        run: |
+          set -e  # Exit on error
+          info_file="release_files/info-${{ github.run_number }}/info.txt"
+          if [[ -f "$info_file" ]]; then
+            while IFS='=' read -r key value; do
+              key=$(echo -n "$key" | tr -d ' ')
+              value=$(echo -n "$value" | tr -d ' ')
+              echo "$key=$value" # for debugging
+              echo "$key=$value" >> $GITHUB_ENV
+            done < "$info_file"
+            rm -f "$info_file"
+          else
+            echo "error: info.txt not found!"
+            exit 1
+          fi
+
+      # Get the Latest Tag from GitHub
+      - name: Generate and create new tag
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+            # Fetch latest tag from release repo
+            TAG="$(gh api repos/$REL_REPO/tags --jq '.[0].name')"
+            if ! echo "$TAG" | grep -q "$KERNEL_NAME"; then
+                TAG="$KERNEL_NAME-r0"
+            fi
+
+            RELEASE_TAG="$(echo "$TAG" | awk -F'-r' '{suffix=$2; if (!suffix) suffix=0; suffix++; printf "%s-r%d", $1, suffix}')"
+
+            echo "Release tag: $RELEASE_TAG"
+            echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
+
+      - name: Upload All Builds to GKI Release Repo
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: ${{ env.RELEASE_REPO }}
+          name: ${{ env.RELEASE_NAME }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          prerelease: true
+          files: release_files/**/*
+          body: |
+            ### 📢 ${{ env.RELEASE_TAG }} Build
+            -> Linux ${{ env.KERNEL_VERSION }}
+            -> KSU Next: ${{ env.KSU_NEXT_VERSION }}
+            -> OG KernelSU: ${{ env.KSU_OFC_VERSION }}
+            -> SUSFS ඞ: ${{ env.SUSFS_VERSION }}
+
+            #### Build Details
+            GKI Builder
+            -> Repo: [here](${{ env.BUILDER_REPO }})
+            -> Branch: ${{ env.BUILDER_CURRENT_BRANCH }}
+            -> Last Commit: [here](${{ env.BUILDER_LAST_COMMIT }})
+
+            Kernel Source
+            -> Repo: [here](${{ env.KERNEL_REPO }})
+            -> Last Commit: [here](${{ env.KERNEL_LAST_COMMIT }})
+            
+            #### Notes
+            -> This kernel only for GKI ${{ env.GKI_VERSION }} devices
+            
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Send notification to TG
+        run: |
+          source ./functions.sh
+          send_msg "📦 Release complete! [GitHub](https://github.com/${{ env.RELEASE_REPO }}/releases/tag/${{ env.RELEASE_TAG }})"
+        env:
+          TOKEN: ${{ secrets.TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
