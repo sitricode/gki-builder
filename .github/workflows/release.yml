@@ -64,7 +64,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
             # Fetch latest tag from release repo
-            TAG="$(gh api repos/$REL_REPO/tags --jq '.[0].name')"
+            TAG="$(gh api repos/$RELEASE_REPO/tags --jq '.[0].name')"
             if ! echo "$TAG" | grep -q "$KERNEL_NAME"; then
                 TAG="$KERNEL_NAME-r0"
             fi
