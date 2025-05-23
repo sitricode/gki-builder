@@ -204,6 +204,11 @@ if [[ $USE_KSU_MANUAL_HOOK == "true" ]]; then
     fi
 fi
 
+# Enable KPM for 🤓SU
+if [[ $KSU == "Suki" ]]; then
+    config --file $DEFCONFIG_FILE --enable CONFIG_KPM
+fi
+
 # Install KernelSU driver
 cd $workdir
 if [[ $KSU != "None" ]]; then
