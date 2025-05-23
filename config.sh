@@ -31,7 +31,7 @@ DEFCONFIGS="
 " # Leave this empty if you don't need to merge any configs
 
 # Releases repository
-GKI_RELEASES_REPO="https://github.com/sitricode/gki-release"
+GKI_RELEASES_REPO="https://github.com/sitricode/mahiru32"
 
 # AOSP Clang
 USE_AOSP_CLANG="true"
