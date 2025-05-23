@@ -34,11 +34,11 @@ DEFCONFIGS="
 GKI_RELEASES_REPO="https://github.com/sitricode/gki-release"
 
 # AOSP Clang
-USE_AOSP_CLANG="false"
+USE_AOSP_CLANG="true"
 AOSP_CLANG_SOURCE="r536225" # Should be version number or direct link to clang tarball
 
 # Custom clang
-USE_CUSTOM_CLANG="true"
+USE_CUSTOM_CLANG="false"
 CUSTOM_CLANG_SOURCE="https://github.com/Rv-Project/RvClang/releases/download/20.1.0/RvClang-20.1.0-bolt-pgo-full_lto.tar.gz"
 CUSTOM_CLANG_BRANCH=""
 
