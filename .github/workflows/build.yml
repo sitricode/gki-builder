@@ -101,7 +101,7 @@ jobs:
         run: |
           export MAN_DISABLE=true
           sudo apt update -y
-          sudo apt install bc cpio flex bison aptitude gh git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache -y
+          sudo apt install bc cpio flex bison aptitude gh git python-is-python3 tar perl wget curl lz4 zstd libarchive-tools ccache dos2unix -y
           sudo aptitude install libssl-dev -y
 
       - name: Set Swap Space
