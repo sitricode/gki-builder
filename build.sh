@@ -68,6 +68,15 @@ else
     ZIP_NAME=${ZIP_NAME//VARIANT/$VARIANT} # Replace VARIANT placeholder
 fi
 
+KERNEL_DIR=$workdir/common
+log "🔍 Checking Kconfig files for Windows line endings..."
+while IFS= read -r -d '' file; do
+    if file "$file" | grep -q CRLF; then
+        log "🧼 Converting CRLF to LF: $file"
+        dos2unix "$file"
+    fi
+done < <(find "$KERNEL_DIR" -name 'Kconfig' -print0)
+
 # Download Toolchains
 cd $workdir
 
