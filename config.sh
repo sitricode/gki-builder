@@ -17,7 +17,7 @@ ANYKERNEL_REPO="https://github.com/sitricode/anykernel"
 ANYKERNEL_BRANCH="gki"
 
 # Kernel
-KERNEL_REPO=https://github.com/MiCode/Xiaomi_Kernel_OpenSource"
+KERNEL_REPO="https://github.com/MiCode/Xiaomi_Kernel_OpenSource"
 KERNEL_BRANCH="emerald_r-u-oss"
 KERNEL_DEFCONFIG="gki_defconfig"
 DEFCONFIG_FILE="$workdir/common/arch/arm64/configs/$KERNEL_DEFCONFIG"
