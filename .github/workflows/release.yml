@@ -10,6 +10,7 @@ jobs:
         variant:
           - { name: "Non-KSU", KernelSU: "None", SUSFS4KSU: "false", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
           - { name: "KSUxSuSFS", KernelSU: "Official", SUSFS4KSU: "true", KSU_MANUAL_HOOK: "false", LAST_BUILD: "false" }
+          - { name: "SUKISU with SuSFS", KernelSU: "Suki", SUSFS4KSU: "true", KSU_MANUAL_HOOK: "true", LAST_BUILD: "false" }
           - { name: "KSU-Next with SuSFS", KernelSU: "Next", SUSFS4KSU: "true", KSU_MANUAL_HOOK: "true", LAST_BUILD: "true" }
     name: Build ${{ matrix.variant.name }}
     uses: ./.github/workflows/build.yml
