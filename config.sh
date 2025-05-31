@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 # Kernel name
-KERNEL_NAME="Mahiru-extended"
+KERNEL_NAME="MahiruX"
 
 # GKI Version
 GKI_VERSION="android12-5.10"
 
 # Build variables
 export TZ="Asia/Jakarta"
-export KBUILD_BUILD_USER="sitri"
-export KBUILD_BUILD_HOST="Qbolt"
+export KBUILD_BUILD_USER="user"
+export KBUILD_BUILD_HOST="host"
 export KBUILD_BUILD_TIMESTAMP=$(date)
 
 # AnyKernel variables
