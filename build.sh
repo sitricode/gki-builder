@@ -30,8 +30,8 @@ sudo timedatectl set-timezone $TZ
 cd $workdir
 
 # Kernel patches source
-log "Cloning kernel patch from (ChiseWaguri/kernel-patches) into $workdir/chise_patches"
-git clone -q --depth=1 https://github.com/ChiseWaguri/kernel-patches chise_patches
+#log "Cloning kernel patch from (ChiseWaguri/kernel-patches) into $workdir/chise_patches"
+#git clone -q --depth=1 https://github.com/ChiseWaguri/kernel-patches chise_patches
 log "Cloning kernel patch from (WildPlusKernel/kernel-patches) into $workdir/wildplus_patches"
 git clone -q --depth=1 https://github.com/WildPlusKernel/kernel_patches wildplus_patches
 
