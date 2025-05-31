@@ -180,6 +180,7 @@ if [[ $USE_KSU_MANUAL_HOOK == "true" ]]; then
     config --file $DEFCONFIG_FILE --enable CONFIG_KSU_MANUAL_HOOK
     config --file $DEFCONFIG_FILE --disable CONFIG_KSU_WITH_KPROBE
     config --file $DEFCONFIG_FILE --disable CONFIG_KSU_SUSFS_SUS_SU
+    config --file $DEFCONFIG_FILE --disable CONFIG_KSU_KPROBES_HOOK
 
     if [[ $KSU == "Official" ]]; then
         error "Official KernelSU has dropped manual hook support. Exiting..."
