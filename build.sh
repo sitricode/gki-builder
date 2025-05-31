@@ -30,8 +30,8 @@ sudo timedatectl set-timezone $TZ
 cd $workdir
 
 # Kernel patches source
-log "Cloning kernel patch from (ChiseWaguri/kernel-patches) into $workdir/chise_patches"
-git clone -q --depth=1 https://github.com/ChiseWaguri/kernel-patches chise_patches
+#log "Cloning kernel patch from (ChiseWaguri/kernel-patches) into $workdir/chise_patches"
+#git clone -q --depth=1 https://github.com/ChiseWaguri/kernel-patches chise_patches
 log "Cloning kernel patch from (WildPlusKernel/kernel-patches) into $workdir/wildplus_patches"
 git clone -q --depth=1 https://github.com/WildPlusKernel/kernel_patches wildplus_patches
 
@@ -50,6 +50,7 @@ declare -A KSU_VARIANTS=(
     ["Rissu"]="RKSU"
     ["Next"]="KSUN"
     ["xx"]="XXKSU"
+    ["Suki"]="SUKISU"
 )
 
 VARIANT="${KSU_VARIANTS[$KSU]:-none}"
@@ -179,6 +180,7 @@ if [[ $USE_KSU_MANUAL_HOOK == "true" ]]; then
     config --file $DEFCONFIG_FILE --enable CONFIG_KSU_MANUAL_HOOK
     config --file $DEFCONFIG_FILE --disable CONFIG_KSU_WITH_KPROBE
     config --file $DEFCONFIG_FILE --disable CONFIG_KSU_SUSFS_SUS_SU
+    config --file $DEFCONFIG_FILE --disable CONFIG_KSU_KPROBES_HOOK
 
     if [[ $KSU == "Official" ]]; then
         error "Official KernelSU has dropped manual hook support. Exiting..."
@@ -198,9 +200,15 @@ if [[ $USE_KSU_MANUAL_HOOK == "true" ]]; then
             config --file $DEFCONFIG_FILE --disable CONFIG_KSU_MANUAL_HOOK
             config --file $DEFCONFIG_FILE --enable CONFIG_KSU_WITH_KPROBE
             config --file $DEFCONFIG_FILE --enable CONFIG_KSU_SUSFS_SUS_SU
+            config --file $DEFCONFIG_FILE --enable CONFIG_KSU_KPROBES_HOOK
 
         fi
     fi
+fi
+
+# Enable KPM for 🤓SU
+if [[ $KSU == "Suki" ]]; then
+    config --file $DEFCONFIG_FILE --enable CONFIG_KPM
 fi
 
 # Install KernelSU driver
@@ -213,6 +221,7 @@ if [[ $KSU != "None" ]]; then
     "Rissu") install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo susfs-v1.5.5 || echo main) ;;
     "Next") install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo next-susfs || echo next) ;;
     "xx") install_ksu backslashxx/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo 12069+sus155 || echo magic) ;;
+    "Suki") install_ksu ShirkNeko/SukiSU-Ultra $([[ $USE_KSU_SUSFS == true ]] && echo susfs-stable) ;;
     *) error "Invalid KSU value: $KSU" ;;
     esac
 fi

@@ -40,6 +40,7 @@ on:
           - "Next"
           - "Rissu"
           - "xx"
+          - "Suki"
 
       SUSFS4KSU:
         description: SUSFS (KSU Needed)
