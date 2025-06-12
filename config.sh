@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Kernel name
-KERNEL_NAME="Mahiru-T"
+KERNEL_NAME="Miharu"
 
 # GKI Version
 GKI_VERSION="android12-5.10"
@@ -17,8 +17,8 @@ ANYKERNEL_REPO="https://github.com/sitricode/anykernel"
 ANYKERNEL_BRANCH="gki"
 
 # Kernel
-KERNEL_REPO="https://github.com/sitricode/mahiru32"
-KERNEL_BRANCH="dev"
+KERNEL_REPO="https://github.com/sitricode/gki-5.10-android12"
+KERNEL_BRANCH="mahiru-primrose"
 KERNEL_DEFCONFIG="gki_defconfig"
 DEFCONFIG_FILE="$workdir/common/arch/arm64/configs/$KERNEL_DEFCONFIG"
 
