@@ -17,8 +17,8 @@ ANYKERNEL_REPO="https://github.com/sitricode/anykernel"
 ANYKERNEL_BRANCH="gki"
 
 # Kernel
-KERNEL_REPO="https://github.com/sitricode/gki-5.10-android12"
-KERNEL_BRANCH="mahiru-primrose"
+KERNEL_REPO="https://github.com/sitricode/gki_5.10"
+KERNEL_BRANCH="android12-5.10"
 KERNEL_DEFCONFIG="gki_defconfig"
 DEFCONFIG_FILE="$workdir/common/arch/arm64/configs/$KERNEL_DEFCONFIG"
 
@@ -31,7 +31,7 @@ DEFCONFIGS="
 " # Leave this empty if you don't need to merge any configs
 
 # Releases repository
-GKI_RELEASES_REPO="https://github.com/sitricode/mahiru32"
+GKI_RELEASES_REPO="https://github.com/sitricode/gki-release"
 
 # AOSP Clang
 USE_AOSP_CLANG="true"
