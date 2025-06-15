@@ -209,7 +209,7 @@ fi
 # Enable KPM for 🤓SU
 if [[ $KSU == "Suki" ]]; then
     config --file $DEFCONFIG_FILE --enable CONFIG_KPM
-    git clone https://github.com/SukiSU-Ultra/SukiSU_patch suki_patch
+    git clone https://github.com/SukiSU-Ultra/SukiSU_patch $workdir/suki_patch
     if ! "$workdir/suki_patch/kpm/patch_android"; then
         log "patching failed lol"
         exit
