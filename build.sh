@@ -367,12 +367,12 @@ if [[ ! -f $KERNEL_IMAGE ]]; then
     error "Kernel Image does not exist at $KERNEL_IMAGE"
 fi
 
-
+cd $workdir
 if [[ $KSU == "Suki" ]]; then
     git clone https://github.com/SukiSU-Ultra/SukiSU_patch $workdir/suki_patch
     cp $workdir/suki_patch/kpm/patch_linux .
-    chmod +x "$workdir/suki_patch/kpm/patch_linux"
-    if ! patch_linux $KERNEL_IMAGE; then
+    chmod +x "$workdir/patch_linux"
+    if ! "patch_linux $KERNEL_IMAGE"; then
         error "patching failed lol"
         exit
     else:
