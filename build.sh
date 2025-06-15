@@ -300,6 +300,7 @@ MAKE_ARGS="
 ARCH=arm64
 LLVM=1
 LLVM_IAS=1
+LTO=thin
 O=$workdir/out
 CROSS_COMPILE=aarch64-linux-gnu-
 CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
@@ -366,10 +367,12 @@ if [[ ! -f $KERNEL_IMAGE ]]; then
     error "Kernel Image does not exist at $KERNEL_IMAGE"
 fi
 
+
 if [[ $KSU == "Suki" ]]; then
     git clone https://github.com/SukiSU-Ultra/SukiSU_patch $workdir/suki_patch
+    cp $workdir/suki_patch/kpm/patch_linux .
     chmod +x "$workdir/suki_patch/kpm/patch_linux"
-    if ! "$workdir/suki_patch/kpm/patch_linux $KERNEL_IMAGE"; then
+    if ! patch_linux $KERNEL_IMAGE; then
         error "patching failed lol"
         exit
     else:
