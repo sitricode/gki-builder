@@ -369,14 +369,12 @@ fi
 if [[ $KSU == "Suki" ]]; then
     git clone https://github.com/SukiSU-Ultra/SukiSU_patch $workdir/suki_patch
     chmod +x "$workdir/suki_patch/kpm/patch_linux"
-    cd $workdir/out/arch/arm64/boot/
-    if ! "$workdir/suki_patch/kpm/patch_linux Image"; then
-        log "patching failed lol"
+    if ! "$workdir/suki_patch/kpm/patch_linux $KERNEL_IMAGE"; then
+        error "patching failed lol"
         exit
     else:
         rm $KERNEL_IMAGE
         mv oImage $KERNEL_IMAGE
-        cd $workdir
     fi
 fi
 ## Post-compiling stuff
