@@ -209,12 +209,6 @@ fi
 # Enable KPM for 🤓SU
 if [[ $KSU == "Suki" ]]; then
     config --file $DEFCONFIG_FILE --enable CONFIG_KPM
-    git clone https://github.com/SukiSU-Ultra/SukiSU_patch $workdir/suki_patch
-    chmod +x "$workdir/suki_patch/kpm/patch_linux"
-    if ! "$workdir/suki_patch/kpm/patch_linux"; then
-        log "patching failed lol"
-        exit
-    fi
 fi
 
 # Install KernelSU driver
@@ -372,6 +366,18 @@ if [[ ! -f $KERNEL_IMAGE ]]; then
     error "Kernel Image does not exist at $KERNEL_IMAGE"
 fi
 
+if [[ $KSU == "Suki" ]]; then
+    git clone https://github.com/SukiSU-Ultra/SukiSU_patch $workdir/suki_patch
+    KPM_TEMP= $workdir/kpm_temp/Image
+    chmod +x "$workdir/suki_patch/kpm/patch_linux"
+    if ! "$workdir/suki_patch/kpm/patch_linux $KERNEL_IMAGE $KPM_TEMP"; then
+        log "patching failed lol"
+        exit
+    else:
+        rm $KERNEL_IMAGE
+        mv $KPM_TEMP $KERNEL_IMAGE
+    fi
+fi
 ## Post-compiling stuff
 cd $workdir
 
