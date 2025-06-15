@@ -210,8 +210,8 @@ fi
 if [[ $KSU == "Suki" ]]; then
     config --file $DEFCONFIG_FILE --enable CONFIG_KPM
     git clone https://github.com/SukiSU-Ultra/SukiSU_patch $workdir/suki_patch
-    chmod +x "$workdir/suki_patch/kpm/patch_android"
-    if ! "$workdir/suki_patch/kpm/patch_android"; then
+    chmod +x "$workdir/suki_patch/kpm/patch_linux"
+    if ! "$workdir/suki_patch/kpm/patch_linux"; then
         log "patching failed lol"
         exit
     fi
