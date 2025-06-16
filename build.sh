@@ -377,10 +377,9 @@ if [[ $KSU == "Suki" ]]; then
     if ! suki_patch/kpm/patch_linux Image; then
         error "patching failed lol"
         exit
-    else:
-        rm $KERNEL_IMAGE
-        mv oImage $KERNEL_IMAGE
     fi
+    rm $KERNEL_IMAGE
+    mv oImage $KERNEL_IMAGE
 fi
 ## Post-compiling stuff
 cd $workdir
