@@ -300,7 +300,6 @@ MAKE_ARGS="
 ARCH=arm64
 LLVM=1
 LLVM_IAS=1
-LTO=thin
 O=$workdir/out
 CROSS_COMPILE=aarch64-linux-gnu-
 CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
