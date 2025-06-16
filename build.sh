@@ -368,9 +368,9 @@ if [[ ! -f $KERNEL_IMAGE ]]; then
 fi
 
 cd $workdir
+#kpm stuff
 if [[ $KSU == "Suki" ]]; then
     git clone https://github.com/SukiSU-Ultra/SukiSU_patch $workdir/suki_patch
-    #cp $workdir/suki_patch/kpm/patch_linux .
     cp $KERNEL_IMAGE .
     chmod +x "$workdir/suki_patch/kpm/patch_linux"
     if ! suki_patch/kpm/patch_linux Image; then
@@ -378,7 +378,6 @@ if [[ $KSU == "Suki" ]]; then
         exit
     fi
     rm $KERNEL_IMAGE
-    ls
     mv oImage $KERNEL_IMAGE
 fi
 ## Post-compiling stuff
