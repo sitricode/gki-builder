@@ -373,12 +373,12 @@ if [[ $KSU == "Suki" ]]; then
     #cp $workdir/suki_patch/kpm/patch_linux .
     cp $KERNEL_IMAGE .
     chmod +x "$workdir/suki_patch/kpm/patch_linux"
-    ls
     if ! suki_patch/kpm/patch_linux Image; then
         error "patching failed lol"
         exit
     fi
     rm $KERNEL_IMAGE
+    ls
     mv oImage $KERNEL_IMAGE
 fi
 ## Post-compiling stuff
