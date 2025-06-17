@@ -244,7 +244,8 @@ elif [[ -n $KSU && $USE_KSU_SUSFS == "true" ]]; then
     if [[ $KSU == "Next" ]]; then
         log "Applying specific patches for kernelsu next"
         #patch -p1 < $workdir/patcher/susfs_backport.patch
-        cd KernelSU-Next
+        ls
+        cd KernelSU
         patch -p1 < $workdir/kernel-patches/ksun_susfs.patch
         cd $workdir/common
     fi
