@@ -499,6 +499,7 @@ if [[ $LAST_BUILD == "true" ]]; then
         echo "SUSFS_VERSION=$(curl -s https://gitlab.com/simonpunk/susfs4ksu/-/raw/gki-${GKI_VERSION}/kernel_patches/include/linux/susfs.h | grep -E '^#define SUSFS_VERSION' | cut -d' ' -f3 | sed 's/"//g')"
         echo "KSU_OFC_VERSION=$(gh api repos/tiann/KernelSU/tags --jq '.[0].name')"
         echo "KSU_NEXT_VERSION=$(gh api repos/rifsxd/KernelSU-Next/tags --jq '.[0].name')"
+        echo "SUKISU_VERSION=$(gh api repos/SukiSU-Ultra/SukiSU-Ultra/tags --jq '.[0].name')"
         echo "RELEASE_NAME=$KERNEL_NAME-$BUILD_DATE"
         echo "KERNEL_NAME=$KERNEL_NAME"
         echo "GKI_VERSION=$GKI_VERSION"
