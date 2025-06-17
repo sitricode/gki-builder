@@ -219,7 +219,7 @@ if [[ $KSU != "None" ]]; then
     case "$KSU" in
     "Official") install_ksu tiann/KernelSU ;;
     "Rissu") install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo susfs-v1.5.5 || echo main) ;;
-    "Next") install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo next-susfs || echo next) ;;
+    "Next") install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo v1.0.8 || echo next) ;;
     "xx") install_ksu backslashxx/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo 12069+sus155 || echo magic) ;;
     "Suki") install_ksu ShirkNeko/SukiSU-Ultra $([[ $USE_KSU_SUSFS == true ]] && echo susfs-main) ;;
     *) error "Invalid KSU value: $KSU" ;;
@@ -240,6 +240,17 @@ elif [[ -n $KSU && $USE_KSU_SUSFS == "true" ]]; then
     cp $SUSFS_PATCHES/include/linux/* ./include/linux/
     cp $SUSFS_PATCHES/fs/* ./fs/
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
+    # KSU-Next specific
+    if [[ $KSU == "Next" ]]; then
+        log "Applying specific patches for kernelsu next"
+        #patch -p1 < $workdir/patcher/susfs_backport.patch
+        if ! patch -p1 <"$SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch"; then
+            error "❌ Patch susfs for ksu failed"
+        fi
+        cd $workdir/KernelSU-Next
+        patch -p1 < $workdir/patcher/ksun_susfs.patch
+        cd $workdir/common
+    fi
 
     # Apply kernel-side susfs patch
     log "Patching kernel-side susfs patch"
