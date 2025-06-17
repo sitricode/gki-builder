@@ -405,8 +405,8 @@ if [[ $KSU == "Suki" ]]; then
         ZIP_NAME_KPM="${ZIP_NAME%.zip}-kpm.zip"
         zip -r9 $workdir/artifacts/$ZIP_NAME_KPM ./*
         log "Reverting Image"
+        cd $workdir
         mv Image $KERNEL_IMAGE
-        
     else 
         log "KPM patching failed, skipping kpm"
     fi
