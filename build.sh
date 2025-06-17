@@ -240,6 +240,14 @@ elif [[ -n $KSU && $USE_KSU_SUSFS == "true" ]]; then
     cp $SUSFS_PATCHES/include/linux/* ./include/linux/
     cp $SUSFS_PATCHES/fs/* ./fs/
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
+    # KSU-Next specific
+    if [[ $KSU == "Next" ]]; then
+        log "Applying specific patches for kernelsu next"
+        patch -p1 < $workdir/patcher/susfs_backport.patch
+        cd KernelSU-Next
+        patch -p1 < $workdir/kernel-patches/ksun_susfs.patch
+        cd $workdir/common
+    fi
 
     # Apply kernel-side susfs patch
     log "Patching kernel-side susfs patch"
