@@ -423,19 +423,6 @@ cp $KERNEL_IMAGE .
 zip -r9 $workdir/artifacts/$ZIP_NAME ./*
 cd ..
 
-if [[ $KSU == "Suki" ]]; then
-    git clone https://github.com/SukiSU-Ultra/SukiSU_patch $workdir/suki_patch
-    cp $KERNEL_IMAGE .
-    chmod +x "$workdir/suki_patch/kpm/patch_linux"
-    if suki_patch/kpm/patch_linux Image; then
-        log "patching success, building anykernel for kpm"
-        rm $KERNEL_IMAGE
-        mv oImage $KERNEL_IMAGE
-    else 
-        log "KPM patching failed, skipping kpm"
-    fi
-fi
-
 
 if [[ $BUILD_BOOTIMG == "true" ]]; then
     # Clone tools
