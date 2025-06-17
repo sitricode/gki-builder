@@ -18,7 +18,7 @@ ANYKERNEL_BRANCH="gki"
 
 # Kernel
 KERNEL_REPO="https://github.com/sitricode/gki_5.10"
-KERNEL_BRANCH="android12-5.10"
+KERNEL_BRANCH="master"
 KERNEL_DEFCONFIG="gki_defconfig"
 DEFCONFIG_FILE="$workdir/common/arch/arm64/configs/$KERNEL_DEFCONFIG"
 
