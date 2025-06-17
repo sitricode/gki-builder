@@ -1,0 +1,75 @@
+From a9caa05ad2664c741218e08a04774589a2407f77 Mon Sep 17 00:00:00 2001
+From: simonpunk <simonpunk2016@gmail.com>
+Date: Fri, 6 Jun 2025 22:56:53 +0000
+Subject: [PATCH] BACKPORT: susfs: Added new ksu_susfs cli to make all sus
+ mounts invisible for all processes or visible for all ksu processes only
+
+- All sus mounts are invisible for all processes in kernel by default
+- usage: ksu_susfs hide_sus_mnts_for_all_procs <0|1>
+
+https://gitlab.com/simonpunk/susfs4ksu/-/commit/c75391d3eebea078dad487c91ee8eaa8e1cc4398
+
+Signed-off-by: bintang774 <108184157+bintang774@users.noreply.github.com>
+---
+ fs/proc_namespace.c       | 14 +++++++++++---
+ include/linux/susfs_def.h |  1 +
+ 2 files changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/fs/proc_namespace.c b/fs/proc_namespace.c
+index efaace2503a1..92003f3f8361 100644
+--- a/fs/proc_namespace.c
++++ b/fs/proc_namespace.c
+@@ -21,6 +21,11 @@
+ #include "pnode.h"
+ #include "internal.h"
+ 
++#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
++extern bool susfs_is_current_ksu_domain(void);
++bool susfs_hide_sus_mnts_for_all_procs = true; // hide sus mounts for all processes by default
++#endif
++
+ static __poll_t mounts_poll(struct file *file, poll_table *wait)
+ {
+ 	struct seq_file *m = file->private_data;
+@@ -107,7 +112,8 @@ static int show_vfsmnt(struct seq_file *m, struct vfsmount *mnt)
+ 	int err;
+ 
+ #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+-	if (unlikely(r->mnt_id >= DEFAULT_SUS_MNT_ID))
++	if (unlikely(r->mnt_id >= DEFAULT_SUS_MNT_ID) &&
++		(susfs_hide_sus_mnts_for_all_procs || !susfs_is_current_ksu_domain()))
+ 		return 0;
+ #endif
+ 
+@@ -146,7 +152,8 @@ static int show_mountinfo(struct seq_file *m, struct vfsmount *mnt)
+ 	int err;
+ 
+ #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+-	if (unlikely(r->mnt_id >= DEFAULT_SUS_MNT_ID))
++	if (unlikely(r->mnt_id >= DEFAULT_SUS_MNT_ID) &&
++		(susfs_hide_sus_mnts_for_all_procs || !susfs_is_current_ksu_domain()))
+ 		return 0;
+ #endif
+ 	seq_printf(m, "%i %i %u:%u ", r->mnt_id, r->mnt_parent->mnt_id,
+@@ -212,7 +219,8 @@ static int show_vfsstat(struct seq_file *m, struct vfsmount *mnt)
+ 	int err;
+ 
+ #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+-	if (unlikely(r->mnt_id >= DEFAULT_SUS_MNT_ID))
++	if (unlikely(r->mnt_id >= DEFAULT_SUS_MNT_ID) &&
++		(susfs_hide_sus_mnts_for_all_procs || !susfs_is_current_ksu_domain()))
+ 		return 0;
+ #endif
+ 
+diff --git a/include/linux/susfs_def.h b/include/linux/susfs_def.h
+index 288e7677bcba..973a8b18dee3 100644
+--- a/include/linux/susfs_def.h
++++ b/include/linux/susfs_def.h
+@@ -9,6 +9,7 @@
+ /* shared with userspace ksu_susfs tool */
+ #define CMD_SUSFS_ADD_SUS_PATH 0x55550
+ #define CMD_SUSFS_ADD_SUS_MOUNT 0x55560
++#define CMD_SUSFS_HIDE_SUS_MNTS_FOR_ALL_PROCS 0x55561
+ #define CMD_SUSFS_ADD_SUS_KSTAT 0x55570
+ #define CMD_SUSFS_UPDATE_SUS_KSTAT 0x55571
+ #define CMD_SUSFS_ADD_SUS_KSTAT_STATICALLY 0x55572
