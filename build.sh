@@ -374,20 +374,6 @@ if [[ ! -f $KERNEL_IMAGE ]]; then
 fi
 
 cd $workdir
-#kpm stuff
-if [[ $KSU == "Suki" ]]; then
-    git clone https://github.com/SukiSU-Ultra/SukiSU_patch $workdir/suki_patch
-    cp $KERNEL_IMAGE .
-    chmod +x "$workdir/suki_patch/kpm/patch_linux"
-    if ! suki_patch/kpm/patch_linux Image; then
-        error "patching failed lol"
-    fi
-    #rm $KERNEL_IMAGE
-    mv oImage $KERNEL_IMAGE
-fi
-## Post-compiling stuff
-cd $workdir
-
 mkdir -p artifacts || error "Creating artifacts directory failed"
 
 # Clone AnyKernel
@@ -404,6 +390,31 @@ if [[ $VARIANT == "none" ]]; then
     )
     sed -i "s/kernel.string=.*/kernel.string=${NEW}/g" anykernel/anykernel.sh
 fi
+#kpm stuff
+if [[ $KSU == "Suki" ]]; then
+    git clone https://github.com/SukiSU-Ultra/SukiSU_patch $workdir/suki_patch
+    cp $KERNEL_IMAGE .
+    chmod +x "$workdir/suki_patch/kpm/patch_linux"
+    if suki_patch/kpm/patch_linux Image; then
+        log "patching success, building anykernel for kpm"
+        rm $KERNEL_IMAGE
+        mv oImage $KERNEL_IMAGE
+        cd anykernel
+        log "Zipping anykernel..."
+        cp $KERNEL_IMAGE .
+        ZIP_NAME_KPM="${ZIP_NAME%.zip}-kpm.zip"
+        zip -r9 $workdir/artifacts/$ZIP_NAME_KPM ./*
+        log "Reverting Image"
+        mv Image $KERNEL_IMAGE
+        
+    else 
+        log "KPM patching failed, skipping kpm"
+    fi
+fi
+## Post-compiling stuff
+cd $workdir
+
+
 
 # Zipping
 cd anykernel
@@ -411,6 +422,20 @@ log "Zipping anykernel..."
 cp $KERNEL_IMAGE .
 zip -r9 $workdir/artifacts/$ZIP_NAME ./*
 cd ..
+
+if [[ $KSU == "Suki" ]]; then
+    git clone https://github.com/SukiSU-Ultra/SukiSU_patch $workdir/suki_patch
+    cp $KERNEL_IMAGE .
+    chmod +x "$workdir/suki_patch/kpm/patch_linux"
+    if suki_patch/kpm/patch_linux Image; then
+        log "patching success, building anykernel for kpm"
+        rm $KERNEL_IMAGE
+        mv oImage $KERNEL_IMAGE
+    else 
+        log "KPM patching failed, skipping kpm"
+    fi
+fi
+
 
 if [[ $BUILD_BOOTIMG == "true" ]]; then
     # Clone tools
