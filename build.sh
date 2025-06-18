@@ -244,6 +244,9 @@ elif [[ -n $KSU && $USE_KSU_SUSFS == "true" ]]; then
     if [[ $KSU == "Next" ]]; then
         log "Applying specific patches for kernelsu next"
         cd $workdir/KernelSU-Next
+        #if ! patch -p1 <"$SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch"; then
+        #    error "❌ Patch susfs for ksu failed"
+        #fi
         patch -p1 < $workdir/patcher/ksun_susfs.patch
         cd $workdir/common
     fi
