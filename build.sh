@@ -221,7 +221,7 @@ if [[ $KSU != "None" ]]; then
     "Rissu") install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo susfs-v1.5.5 || echo main) ;;
     "Next") install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo v1.0.8 || echo next) ;;
     "xx") install_ksu backslashxx/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo 12069+sus155 || echo magic) ;;
-    "Suki") install_ksu ShirkNeko/SukiSU-Ultra $([[ $USE_KSU_SUSFS == true ]] && echo susfs-main) ;;
+    "Suki") install_ksu ShirkNeko/SukiSU-Ultra $([[ $USE_KSU_SUSFS == true ]] && echo susfs-main || echo main) ;;
     *) error "Invalid KSU value: $KSU" ;;
     esac
 fi
@@ -243,7 +243,6 @@ elif [[ -n $KSU && $USE_KSU_SUSFS == "true" ]]; then
     # KSU-Next specific
     if [[ $KSU == "Next" ]]; then
         log "Applying specific patches for kernelsu next"
-        #patch -p1 < $workdir/patcher/susfs_backport.patch
         cd $workdir/KernelSU-Next
         #if ! patch -p1 <"$SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch"; then
         #    error "❌ Patch susfs for ksu failed"
@@ -378,21 +377,6 @@ if [[ ! -f $KERNEL_IMAGE ]]; then
 fi
 
 cd $workdir
-#kpm stuff
-if [[ $KSU == "Suki" ]]; then
-    git clone https://github.com/SukiSU-Ultra/SukiSU_patch $workdir/suki_patch
-    cp $KERNEL_IMAGE .
-    chmod +x "$workdir/suki_patch/kpm/patch_linux"
-    if ! suki_patch/kpm/patch_linux Image; then
-        error "patching failed lol"
-        exit
-    fi
-    rm $KERNEL_IMAGE
-    mv oImage $KERNEL_IMAGE
-fi
-## Post-compiling stuff
-cd $workdir
-
 mkdir -p artifacts || error "Creating artifacts directory failed"
 
 # Clone AnyKernel
@@ -409,6 +393,31 @@ if [[ $VARIANT == "none" ]]; then
     )
     sed -i "s/kernel.string=.*/kernel.string=${NEW}/g" anykernel/anykernel.sh
 fi
+#kpm stuff
+if [[ $KSU == "Suki" ]]; then
+    git clone https://github.com/SukiSU-Ultra/SukiSU_patch $workdir/suki_patch
+    cp $KERNEL_IMAGE .
+    chmod +x "$workdir/suki_patch/kpm/patch_linux"
+    if suki_patch/kpm/patch_linux Image; then
+        log "patching success, building anykernel for kpm"
+        rm $KERNEL_IMAGE
+        mv oImage $KERNEL_IMAGE
+        cd anykernel
+        log "Zipping anykernel..."
+        cp $KERNEL_IMAGE .
+        ZIP_NAME_KPM="${ZIP_NAME%.zip}-kpm.zip"
+        zip -r9 $workdir/artifacts/$ZIP_NAME_KPM ./*
+        log "Reverting Image"
+        cd $workdir
+        mv Image $KERNEL_IMAGE
+    else 
+        log "KPM patching failed, skipping kpm"
+    fi
+fi
+## Post-compiling stuff
+cd $workdir
+
+
 
 # Zipping
 cd anykernel
@@ -416,6 +425,7 @@ log "Zipping anykernel..."
 cp $KERNEL_IMAGE .
 zip -r9 $workdir/artifacts/$ZIP_NAME ./*
 cd ..
+
 
 if [[ $BUILD_BOOTIMG == "true" ]]; then
     # Clone tools
@@ -504,6 +514,7 @@ if [[ $LAST_BUILD == "true" ]]; then
         echo "SUSFS_VERSION=$(curl -s https://gitlab.com/simonpunk/susfs4ksu/-/raw/gki-${GKI_VERSION}/kernel_patches/include/linux/susfs.h | grep -E '^#define SUSFS_VERSION' | cut -d' ' -f3 | sed 's/"//g')"
         echo "KSU_OFC_VERSION=$(gh api repos/tiann/KernelSU/tags --jq '.[0].name')"
         echo "KSU_NEXT_VERSION=$(gh api repos/rifsxd/KernelSU-Next/tags --jq '.[0].name')"
+        echo "SUKISU_VERSION=$(gh api repos/SukiSU-Ultra/SukiSU-Ultra/tags --jq '.[0].name')"
         echo "RELEASE_NAME=$KERNEL_NAME-$BUILD_DATE"
         echo "KERNEL_NAME=$KERNEL_NAME"
         echo "GKI_VERSION=$GKI_VERSION"
