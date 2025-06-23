@@ -43,10 +43,10 @@ git clone -q --depth=1 $KERNEL_REPO -b $KERNEL_BRANCH common
 cd $workdir/common
 KERNEL_VERSION=$(make kernelversion)
 
+# Use thin LTO for testing
 if [[ $KERNEL_BRANCH == "test" ]]; then
-    ZIP_NAME=${ZIP_NAME//-VARIANT/} # Remove "-VARIANT" if no variant
-else
-    ZIP_NAME=${ZIP_NAME//VARIANT/$VARIANT} # Replace VARIANT placeholder
+    config --file $DEFCONFIG_FILE --enable CONFIG_LTO_CLANG_THIN
+    config --file $DEFCONFIG_FILE --disable CONFIG_LTO_CLANG_FULL
 fi
 
 
@@ -68,10 +68,11 @@ VARIANT="${KSU_VARIANTS[$KSU]:-none}"
 # Set ZIP_NAME with replacements
 ZIP_NAME=${ZIP_NAME//KVER/$KERNEL_VERSION}
 
-# Use thin LTO for testing
+# Handle VARIANT replacement in ZIP_NAME
 if [[ $VARIANT == "none" ]]; then
-    config --file $DEFCONFIG_FILE --enable CONFIG_LTO_CLANG_THIN
-    config --file $DEFCONFIG_FILE --disable CONFIG_LTO_CLANG_FULL
+     ZIP_NAME=${ZIP_NAME//-VARIANT/} # Remove "-VARIANT" if no variant
+else
+    ZIP_NAME=${ZIP_NAME//VARIANT/$VARIANT} # Replace VARIANT placeholder
 fi
 
 # Download Toolchains
