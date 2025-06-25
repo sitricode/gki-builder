@@ -240,16 +240,6 @@ elif [[ -n $KSU && $USE_KSU_SUSFS == "true" ]]; then
     cp $SUSFS_PATCHES/include/linux/* ./include/linux/
     cp $SUSFS_PATCHES/fs/* ./fs/
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
-    # KSU-Next specific
-    if [[ $KSU == "Next" ]]; then
-        log "Applying specific patches for kernelsu next"
-        cd $workdir/KernelSU-Next
-        #if ! patch -p1 <"$SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch"; then
-        #    error "❌ Patch susfs for ksu failed"
-        #fi
-        patch -p1 < $workdir/patcher/ksun_susfs.patch
-        cd $workdir/common
-    fi
 
     # Apply kernel-side susfs patch
     log "Patching kernel-side susfs patch"
@@ -267,6 +257,13 @@ elif [[ -n $KSU && $USE_KSU_SUSFS == "true" ]]; then
     fi
     rm -f ./patch.log
 
+    # KSU-Next specific
+    if [[ $KSU == "Next" ]]; then
+        log "Applying specific patches for kernelsu next"
+        patch -p1 < $workdir/patcher/susfs_hide.patch
+        cd $workdir/KernelSU-Next
+        patch -p1 < $workdir/patcher/ksun_susfs.patch
+    fi
     # Apply patch to KernelSU (KSU Side)
     if [[ $KSU == "Official" ]]; then
         cd ../KernelSU
