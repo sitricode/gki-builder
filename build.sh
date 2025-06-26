@@ -256,7 +256,7 @@ elif [[ -n $KSU && $USE_KSU_SUSFS == "true" ]]; then
         mv -f fs/devpts/inode.c.orig fs/devpts/inode.c
     fi
     rm -f ./patch.log
-    patch -p1 < $workdir/patcher/ptrace_hide.patch
+    #patch -p1 < $workdir/patcher/ptrace_hide.patch
 
     # KSU-Next specific
     if [[ $KSU == "Next" ]]; then
