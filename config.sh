@@ -43,7 +43,7 @@ CUSTOM_CLANG_SOURCE="https://github.com/Rv-Project/RvClang/releases/download/20.
 CUSTOM_CLANG_BRANCH=""
 #Clang setting
 USE_THIN_LTO="true"
-OPT_CC_PATCH="true"
+OPT_CC_PATCH="falsew"
 
 # Zip name
 BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%Y-%m-%d-%H%M")
