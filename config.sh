@@ -41,7 +41,9 @@ AOSP_CLANG_SOURCE="r536225" # Should be version number or direct link to clang t
 USE_CUSTOM_CLANG="false"
 CUSTOM_CLANG_SOURCE="https://github.com/Rv-Project/RvClang/releases/download/20.1.0/RvClang-20.1.0-bolt-pgo-full_lto.tar.gz"
 CUSTOM_CLANG_BRANCH=""
+#Clang setting
 USE_THIN_LTO="true"
+OPT_CC_PATCH="true"
 
 # Zip name
 BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%Y-%m-%d-%H%M")
