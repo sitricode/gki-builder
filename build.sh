@@ -287,6 +287,10 @@ fi
 if grep -q 'echo "+"' scripts/setlocalversion; then
     sed -i 's/echo "+"/# echo "+"/g' scripts/setlocalversion
 fi
+#enable specify cc optimization
+if [[ $OPT_CC_PATCH == "true" ]]; then
+    patch -p1 <"$workdir/patcher/gay99.patch"
+fi
 
 # Set localversion to the KERNEL_NAME variable
 config --file $DEFCONFIG_FILE \
