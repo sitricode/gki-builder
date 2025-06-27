@@ -91,6 +91,12 @@ if [[ $CLANG_URL != *.tar.* && -n $CUSTOM_CLANG_BRANCH ]]; then
 fi
 log "Clang used is $CLANG_INFO..."
 
+if [[ $USE_THIN_LTO == "true" ]]; then
+    config --file $DEFCONFIG_FILE --enable CONFIG_LTO_CLANG_THIN
+    config --file $DEFCONFIG_FILE --disable CONFIG_LTO_CLANG_FULL
+fi
+
+
 # Check if Clang is already installed
 CLANG_PATH="$workdir/tc"
 
