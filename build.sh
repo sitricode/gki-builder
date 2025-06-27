@@ -267,7 +267,7 @@ elif [[ -n $KSU && $USE_KSU_SUSFS == "true" ]]; then
     # KSU-Next specific
     if [[ $KSU == "Next" ]]; then
         log "Applying specific patches for kernelsu next"
-        patch -p1 < $workdir/patcher/susfs_hide.patch
+        #patch -p1 < $workdir/patcher/susfs_hide.patch
         cd $workdir/KernelSU-Next
         patch -p1 < $workdir/patcher/ksun_susfs.patch
     fi
