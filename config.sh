@@ -42,8 +42,8 @@ USE_CUSTOM_CLANG="false"
 CUSTOM_CLANG_SOURCE="https://pub-518e5c4602fc4016aa4a80856eaa0ad4.r2.dev/clang-r536225.tar.gz"
 CUSTOM_CLANG_BRANCH=""
 #Clang setting
-USE_THIN_LTO="false"
-OPT_CC_PATCH="true"
+USE_THIN_LTO="true"
+OPT_CC_PATCH="falsew"
 
 # Zip name
 BUILD_DATE=$(date -d "$KBUILD_BUILD_TIMESTAMP" +"%Y-%m-%d-%H%M")
