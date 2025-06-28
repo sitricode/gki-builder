@@ -8,8 +8,8 @@ GKI_VERSION="android12-5.10"
 
 # Build variables
 export TZ="Asia/Jakarta"
-export KBUILD_BUILD_USER="sitricode"
-export KBUILD_BUILD_HOST="github"
+export KBUILD_BUILD_USER="sitri"
+export KBUILD_BUILD_HOST="build-host"
 export KBUILD_BUILD_TIMESTAMP=$(date)
 
 # AnyKernel variables
