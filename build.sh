@@ -107,7 +107,7 @@ if [[ ! -x $CLANG_PATH/bin/clang || ! -f $CLANG_PATH/VERSION || "$(cat $CLANG_PA
 
     if [[ $USE_AOSP_CLANG == "true" || $CLANG_URL == *.tar.* ]]; then
         mkdir -p "$CLANG_PATH"
-        wget -qO clang-tarball "$CLANG_URL" || error "Failed to download Clang."
+        aria2c -o clang-tarball -x 10 -s 10 --console-log-level=warn "$CLANG_URL" || error "Failed to download Clang."
         tar -xf clang-tarball -C "$CLANG_PATH/" || error "Failed to extract Clang."
         rm -f clang-tarball
         while [ "$(find "$CLANG_PATH" -mindepth 1 -maxdepth 1 -type d | wc -l)" -eq 1 ]; do
