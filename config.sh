@@ -42,7 +42,7 @@ USE_CUSTOM_CLANG="false"
 CUSTOM_CLANG_SOURCE="https://github.com/liliumproject/clang/releases/download/20250609/lilium_clang-20250609.tar.gz"
 CUSTOM_CLANG_BRANCH=""
 #Clang setting
-USE_THIN_LTO="true"
+USE_THIN_LTO="false"
 OPT_CC_PATCH="falsew"
 
 # Zip name
