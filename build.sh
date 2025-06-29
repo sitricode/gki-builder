@@ -310,7 +310,8 @@ text=$(
 EOF
 )
 
-send_msg "$text"
+MESSAGE_ID=$(send_msg "$text" 2>&1 | jq -r .result.message_id)
+
 
 # Define make args
 MAKE_ARGS="
@@ -538,8 +539,9 @@ if [[ $LAST_BUILD == "true" ]]; then
 fi
 
 if [[ $STATUS == "BETA" ]]; then
-    send_msg "✅ Build Succeeded"
-    send_msg "📦 [Download]($NIGHTLY_LINK)"
+    reply_file "$MESSAGE_ID" "$workdir/$ZIP_NAME"
+    reply_file "$MESSAGE_ID" "$workdir/build.log"
+    reply_msg "✅ Build Succeeded \n📦 [Download]($NIGHTLY_LINK)"
 fi
 
 exit 0
