@@ -540,8 +540,9 @@ fi
 
 if [[ $STATUS == "BETA" ]]; then
     #Send all files in the artifacts directory
-    for file in "$workdir/artifacts"/*; do
+    for file in $workdir/artifacts/*; do
         if [[ -f "$file" ]]; then
+            echo $file
             reply_file "$MESSAGE_ID" "$file"
         fi
     done
