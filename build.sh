@@ -539,7 +539,12 @@ if [[ $LAST_BUILD == "true" ]]; then
 fi
 
 if [[ $STATUS == "BETA" ]]; then
-    reply_file "$MESSAGE_ID" "$workdir/artifacts/$ZIP_NAME"
+    #Send all files in the artifacts directory
+    for file in "$workdir/artifacts"/*; do
+        if [[ -f "$file" ]]; then
+            reply_file "$MESSAGE_ID" "$file"
+        fi
+    done
     reply_file "$MESSAGE_ID" "$workdir/build.log"
     reply_msg "$MESSAGE_ID" "✅ Build Succeeded \n📦 [Download]($NIGHTLY_LINK)"
 fi
