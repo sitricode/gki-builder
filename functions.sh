@@ -57,7 +57,6 @@ send_msg() {
         -d "disable_web_page_preview=true" \
         -d "parse_mode=markdown" \
         -d text="$msg" \
-        -o /dev/null
 }
 # reply_msg <text>
 reply_msg() {
