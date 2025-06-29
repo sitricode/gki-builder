@@ -14,7 +14,7 @@ upload_file() {
   fi
   chmod 777 $FILE
   curl -s -F document=@"$FILE" "https://api.telegram.org/bot$TG_BOT_TOKEN/sendDocument" \
-    -F "chat_id=$TG_CHAT_ID" \
+    -F "chat_id=$CHAT_ID" \
     -F "disable_web_page_preview=true" \
     -F "parse_mode=markdown"
 }
@@ -28,7 +28,7 @@ reply_file() {
   fi
   chmod 777 $FILE
   curl -s -F document=@"$FILE" "https://api.telegram.org/bot$TG_BOT_TOKEN/sendDocument" \
-    -F "chat_id=$TG_CHAT_ID" \
+    -F "chat_id=$CHAT_ID" \
     -F "reply_to_message_id=$MESSAGE_ID" \
     -F "disable_web_page_preview=true" \
     -F "parse_mode=markdown"
@@ -64,7 +64,7 @@ reply_msg() {
   local MESSAGE_ID="$1"
   local MESSAGE="$2"
   curl -s -X POST "https://api.telegram.org/bot$TG_BOT_TOKEN/sendMessage" \
-    -d "chat_id=$TG_CHAT_ID" \
+    -d "chat_id=$CHAT_ID" \
     -d "reply_to_message_id=$MESSAGE_ID" \
     -d "disable_web_page_preview=true" \
     -d "parse_mode=markdown" \
