@@ -311,6 +311,7 @@ EOF
 )
 
 MESSAGE_ID=$(send_msg "$text" 2>&1 | jq -r .result.message_id)
+log $MESSAGE_ID
 
 
 # Define make args
