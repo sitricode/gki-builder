@@ -310,7 +310,9 @@ text=$(
 EOF
 )
 
-MESSAGE_ID=$(send_msg "$text" 2>&1 | jq -r .result.message_id)
+response=$(send_msg "$text")
+log $response
+MESSAGE_ID=$(echo "$response" | jq -r .result.message_id)
 log $MESSAGE_ID
 
 
