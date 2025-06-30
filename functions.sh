@@ -56,7 +56,7 @@ send_msg() {
         -d chat_id="$CHAT_ID" \
         -d "disable_web_page_preview=true" \
         -d "parse_mode=markdown" \
-        -d text="$msg" \
+        -d text="$msg" 
 }
 # reply_msg <text>
 reply_msg() {
