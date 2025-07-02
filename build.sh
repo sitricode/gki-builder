@@ -548,7 +548,7 @@ if [[ $STATUS == "BETA" ]]; then
         fi
     done
     reply_file "$MESSAGE_ID" "$workdir/build.log"
-    reply_msg "$MESSAGE_ID" "✅ Build Succeeded \n📦 [Download]($NIGHTLY_LINK)"
+    reply_msg "$MESSAGE_ID" "✅ [Build]($NIGHTLY_LINK) Succeeded"
 fi
 
 exit 0
