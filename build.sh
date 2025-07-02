@@ -311,9 +311,7 @@ EOF
 )
 
 response=$(send_msg "$text")
-log $response
 MESSAGE_ID=$(echo "$response" | jq -r .result.message_id)
-log $MESSAGE_ID
 
 
 # Define make args
@@ -545,7 +543,7 @@ if [[ $STATUS == "BETA" ]]; then
     #Send all files in the artifacts directory
     for file in "$workdir/artifacts"/*; do
         if [[ -f "$file" ]]; then
-            echo $file
+            log $file
             reply_file "$MESSAGE_ID" "$file"
         fi
     done
