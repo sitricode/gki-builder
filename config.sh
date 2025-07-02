@@ -39,8 +39,10 @@ AOSP_CLANG_SOURCE="https://pub-518e5c4602fc4016aa4a80856eaa0ad4.r2.dev/clang-r53
 
 # Custom clang
 USE_CUSTOM_CLANG="false"
+#CUSTOM_CLANG_SOURCE="https://github.com/liliumproject/clang/releases/download/20250609/lilium_clang-20250609.tar.gz"
 CUSTOM_CLANG_SOURCE="https://github.com/ZyCromerZ/Clang/releases/download/19.0.0git-20240723-release/Clang-19.0.0git-20240723.tar.gz"
-#CUSTOM_CLANG_BRANCH="https://github.com/liliumproject/clang/releases/download/20250609/lilium_clang-20250609.tar.gz"
+CUSTOM_CLANG_BRANCH=""
+
 #Clang setting
 USE_THIN_LTO="falsee"
 OPT_CC_PATCH="true"

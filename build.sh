@@ -225,7 +225,7 @@ if [[ $KSU != "None" ]]; then
     case "$KSU" in
     "Official") install_ksu tiann/KernelSU ;;
     "Rissu") install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo susfs-v1.5.5 || echo main) ;;
-    "Next") install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo v1.0.8 || echo next) ;;
+    "Next") install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo next || echo next) ;;
     "xx") install_ksu backslashxx/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo 12069+sus155 || echo magic) ;;
     "Suki") install_ksu ShirkNeko/SukiSU-Ultra $([[ $USE_KSU_SUSFS == true ]] && echo susfs-main || echo main) ;;
     *) error "Invalid KSU value: $KSU" ;;
@@ -310,7 +310,9 @@ text=$(
 EOF
 )
 
-send_msg "$text"
+response=$(send_msg "$text")
+MESSAGE_ID=$(echo "$response" | jq -r .result.message_id)
+
 
 # Define make args
 MAKE_ARGS="
@@ -538,8 +540,15 @@ if [[ $LAST_BUILD == "true" ]]; then
 fi
 
 if [[ $STATUS == "BETA" ]]; then
-    send_msg "✅ Build Succeeded"
-    send_msg "📦 [Download]($NIGHTLY_LINK)"
+    #Send all files in the artifacts directory
+    for file in "$workdir/artifacts"/*; do
+        if [[ -f "$file" ]]; then
+            log $file
+            reply_file "$MESSAGE_ID" "$file"
+        fi
+    done
+    reply_file "$MESSAGE_ID" "$workdir/build.log"
+    reply_msg "$MESSAGE_ID" "✅ [Build]($NIGHTLY_LINK) Succeeded"
 fi
 
 exit 0
