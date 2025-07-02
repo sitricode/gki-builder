@@ -16,7 +16,8 @@ upload_file() {
   curl -s -F document=@"$FILE" "https://api.telegram.org/bot$TOKEN/sendDocument" \
     -F "chat_id=$CHAT_ID" \
     -F "disable_web_page_preview=true" \
-    -F "parse_mode=markdown"
+    -F "parse_mode=markdown" \
+    -o /dev/null
 }
 
 # reply_file <message_id> <path/to/file>
@@ -31,7 +32,8 @@ reply_file() {
     -F "chat_id=$CHAT_ID" \
     -F "reply_to_message_id=$MESSAGE_ID" \
     -F "disable_web_page_preview=true" \
-    -F "parse_mode=markdown"
+    -F "parse_mode=markdown" \
+    -o /dev/null
 }
 
 upload_file() {
@@ -67,7 +69,8 @@ reply_msg() {
     -d "reply_to_message_id=$MESSAGE_ID" \
     -d "disable_web_page_preview=true" \
     -d "parse_mode=markdown" \
-    -d "text=$MESSAGE"
+    -d "text=$MESSAGE" \
+    -o /dev/null
 }
 # KernelSU installation function
 install_ksu() {
