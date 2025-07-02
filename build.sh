@@ -293,15 +293,16 @@ if [[ $OPT_CC_PATCH == "true" ]]; then
 fi
 
 # Set localversion to the KERNEL_NAME variable
+LAST_HASH=$(git -C "$workdir/common" rev-parse --short=7 HEAD)
 config --file $DEFCONFIG_FILE \
-    --set-str LOCALVERSION "-$KERNEL_NAME"
+    --set-str LOCALVERSION "-$KERNEL_NAME-$LAST_HASH"
 
 text=$(
     cat <<EOF
 *~~~ $KERNEL_NAME CI ~~~*
 *GKI Version*: \`$GKI_VERSION\`
 *Kernel Version*: \`$KERNEL_VERSION\`
-*Build Status*: \`$STATUS\`
+*Build Status*: \`$STATUS-$LAST_HASH\`
 *Date*: \`$KBUILD_BUILD_TIMESTAMP\`
 *KSU Variant*: \`$VARIANT\`$([[ $KSU != "None" ]] && echo "
 *KSU Version*: \`$KSU_VERSION\`")
