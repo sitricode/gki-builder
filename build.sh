@@ -292,16 +292,31 @@ if [[ $OPT_CC_PATCH == "true" ]]; then
     patch -p1 <"$workdir/patcher/gay99.patch"
 fi
 
+#Get hash for kernel name
+LAST_HASH=$(git -C "$workdir/common" rev-parse --short=7 HEAD)
+FULL_HASH=$(git -C "$workdir/common" rev-parse HEAD)
+ORIGIN_URL=$(git -C "$workdir/common" config --get remote.origin.url)
+if [[ "$ORIGIN_URL" =~ ^git@([^:]+):(.+)\.git$ ]]; then
+    # Convert SSH to https
+    ORIGIN_WEB_URL="https://${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
+elif [[ "$ORIGIN_URL" =~ ^https://.*\.git$ ]]; then
+    ORIGIN_WEB_URL="${ORIGIN_URL%.git}"
+else
+    ORIGIN_WEB_URL="$ORIGIN_URL"
+fi
+# Final commit URL
+COMMIT_URL="$ORIGIN_WEB_URL/commit/$FULL_HASH"
+
 # Set localversion to the KERNEL_NAME variable
 config --file $DEFCONFIG_FILE \
-    --set-str LOCALVERSION "-$KERNEL_NAME"
+    --set-str LOCALVERSION "-$KERNEL_NAME-$LAST_HASH"
 
 text=$(
     cat <<EOF
 *~~~ $KERNEL_NAME CI ~~~*
 *GKI Version*: \`$GKI_VERSION\`
 *Kernel Version*: \`$KERNEL_VERSION\`
-*Build Status*: \`$STATUS\`
+*Build Status*: \`$STATUS\` [$LAST_HASH]($COMMIT_URL)
 *Date*: \`$KBUILD_BUILD_TIMESTAMP\`
 *KSU Variant*: \`$VARIANT\`$([[ $KSU != "None" ]] && echo "
 *KSU Version*: \`$KSU_VERSION\`")
