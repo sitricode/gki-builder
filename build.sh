@@ -279,7 +279,6 @@ elif [[ -n $KSU && $USE_KSU_SUSFS == "true" ]]; then
     if [[ $KSU == "Official" ]]; then
         cd ../KernelSU
         log "Applying KernelSU-side susfs patch"
-        patch -p1 <$SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch || error "KernelSU-side susfs patch failed."
     fi
 fi
 
