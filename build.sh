@@ -269,7 +269,9 @@ elif [[ -n $KSU && $USE_KSU_SUSFS == "true" ]]; then
         log "Applying specific patches for kernelsu next"
         #patch -p1 < $workdir/patcher/susfs_hide.patch
         cd $workdir/KernelSU-Next
-        patch -p1 < $workdir/patcher/ksun_susfs.patch
+        #patch -p1 < $workdir/patcher/ksun_susfs.patch
+        patch -p1 <$SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch || error "KernelSU-side susfs patch failed."
+        
     fi
     # Apply patch to KernelSU (KSU Side)
     if [[ $KSU == "Official" ]]; then
