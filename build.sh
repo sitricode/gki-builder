@@ -226,7 +226,7 @@ if [[ $KSU != "None" ]]; then
     case "$KSU" in
     "Official") install_ksu tiann/KernelSU ;;
     "Rissu") install_ksu rsuntk/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo susfs-v1.5.5 || echo main) ;;
-    "Next") install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo v1.0.8 || echo next) ;;
+    "Next") install_ksu rifsxd/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo next || echo next) ;;
     "NextF") install_ksu sitricode/KernelSU-Next $([[ $USE_KSU_SUSFS == true ]] && echo next-susfs || echo next) ;;
     "xx") install_ksu backslashxx/KernelSU $([[ $USE_KSU_SUSFS == true ]] && echo 12069+sus155 || echo magic) ;;
     "Suki") install_ksu ShirkNeko/SukiSU-Ultra $([[ $USE_KSU_SUSFS == true ]] && echo susfs-main || echo main) ;;
@@ -269,10 +269,15 @@ elif [[ -n $KSU && $USE_KSU_SUSFS == "true" ]]; then
     # KSU-Next specific
     if [[ $KSU == "Next" ]]; then
         log "Applying specific patches for kernelsu next"
-        #patch -p1 < $workdir/patcher/susfs_hide.patch
         cd $workdir/KernelSU-Next
         #patch -p1 < $workdir/patcher/ksun_susfs.patch
-        patch -p1 <$SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch || error "KernelSU-side susfs patch failed."
+        patch -p1 --forward --fuzz=3 <$SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch || true
+        patch -p1 --forward --fuzz=3 <$workdir/wildplus_patches/next/susfs_fix_patches/v1.5.9/fix_apk_sign.c.patch
+        patch -p1 --forward --fuzz=3 <$workdir/wildplus_patches/next/susfs_fix_patches/v1.5.9/fix_core_hook.c.patch
+        patch -p1 --forward --fuzz=3 <$workdir/wildplus_patches/next/susfs_fix_patches/v1.5.9/fix_selinux.c.patch
+        patch -p1 --forward --fuzz=3 <$workdir/wildplus_patches/next/susfs_fix_patches/v1.5.9/fix_ksud.c.patch
+        patch -p1 --forward --fuzz=3 <$workdir/wildplus_patches/next/susfs_fix_patches/v1.5.9/fix_rules.c.patch
+        patch -p1 --forward --fuzz=3 <$workdir/wildplus_patches/next/susfs_fix_patches/v1.5.9/fix_sucompat.c.patch
         
     fi
     # Apply patch to KernelSU (KSU Side)
