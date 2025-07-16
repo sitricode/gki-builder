@@ -278,7 +278,11 @@ elif [[ -n $KSU && $USE_KSU_SUSFS == "true" ]]; then
         patch -p1 --forward --fuzz=3 <$workdir/wildplus_patches/next/susfs_fix_patches/v1.5.9/fix_ksud.c.patch
         patch -p1 --forward --fuzz=3 <$workdir/wildplus_patches/next/susfs_fix_patches/v1.5.9/fix_rules.c.patch
         patch -p1 --forward --fuzz=3 <$workdir/wildplus_patches/next/susfs_fix_patches/v1.5.9/fix_sucompat.c.patch
-        patch -p1 --forward --fuzz=3 <$workdir/patcher/fix_kernel_compact.patch
+        patch -p1 --forward --fuzz=3 <$workdir/patcher/fix_kernel_compact.patch || true
+        upload_file "$workdir/KernelSU-Next/kernel/kernel_compat.c.rej"
+        exit
+
+        
         
     fi
     # Apply patch to KernelSU (KSU Side)
