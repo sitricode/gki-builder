@@ -1,6 +1,6 @@
 diff -Naur a/kernel/kernel_compat.c b/kernel/kernel_compat.c
---- a/kernel/kernel_compat.c	2025-07-16 09:41:37.888998904 +0330
-+++ b/kernel/kernel_compat.c	2025-07-16 09:49:02.060998735 +0330
+--- a/kernel/kernel_compat.c	2025-07-17 14:05:10.123456789 +0700
++++ b/kernel/kernel_compat.c	2025-07-17 14:06:15.987654321 +0700
 @@ -76,6 +76,16 @@
  	task_unlock(current);
  }
