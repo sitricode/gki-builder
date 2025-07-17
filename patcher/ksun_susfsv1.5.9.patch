@@ -1767,4 +1767,3 @@ index f33e4cb91..98bb9d591 100644
 +void ksu_track_throne();
  
  bool is_lock_held(const char *path);
- 
