@@ -18,7 +18,7 @@ ANYKERNEL_BRANCH="gki"
 
 # Kernel
 KERNEL_REPO="https://github.com/sitricode/gki_5.10"
-KERNEL_BRANCH="master"
+KERNEL_BRANCH="stable"
 KERNEL_DEFCONFIG="gki_defconfig"
 DEFCONFIG_FILE="$workdir/common/arch/arm64/configs/$KERNEL_DEFCONFIG"
 
@@ -43,7 +43,7 @@ USE_CUSTOM_CLANG="false"
 CUSTOM_CLANG_SOURCE="https://github.com/ZyCromerZ/Clang/releases/download/19.0.0git-20240723-release/Clang-19.0.0git-20240723.tar.gz"
 CUSTOM_CLANG_BRANCH=""
 #Clang setting
-USE_THIN_LTO="true"
+USE_THIN_LTO="false"
 OPT_CC_PATCH="falsew"
 
 # Zip name
