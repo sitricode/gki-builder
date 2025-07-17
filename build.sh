@@ -271,15 +271,7 @@ elif [[ -n $KSU && $USE_KSU_SUSFS == "true" ]]; then
         log "Applying specific patches for kernelsu next"
         cd $workdir/KernelSU-Next
         #patch -p1 < $workdir/patcher/ksun_susfs.patch
-        patch -p1 --forward --fuzz=3 <$SUSFS_PATCHES/KernelSU/10_enable_susfs_for_ksu.patch || true
-        patch -p1 --forward --fuzz=3 <$workdir/wildplus_patches/next/susfs_fix_patches/v1.5.9/fix_apk_sign.c.patch
-        patch -p1 --forward --fuzz=3 <$workdir/wildplus_patches/next/susfs_fix_patches/v1.5.9/fix_core_hook.c.patch
-        patch -p1 --forward --fuzz=3 <$workdir/wildplus_patches/next/susfs_fix_patches/v1.5.9/fix_selinux.c.patch
-        patch -p1 --forward --fuzz=3 <$workdir/wildplus_patches/next/susfs_fix_patches/v1.5.9/fix_ksud.c.patch
-        patch -p1 --forward --fuzz=3 <$workdir/wildplus_patches/next/susfs_fix_patches/v1.5.9/fix_rules.c.patch
-        patch -p1 --forward --fuzz=3 <$workdir/wildplus_patches/next/susfs_fix_patches/v1.5.9/fix_sucompat.c.patch
-        patch -p1 --forward --fuzz=3 <$workdir/patcher/fix_kernel_compact.patch || true
-        upload_file "$workdir/KernelSU-Next/kernel/kernel_compat.c.rej"
+        patch -p1 < "$workdir/patcher/ksun_susfsv1.5.9.patch"
         exit
 
         
