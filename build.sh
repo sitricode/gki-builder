@@ -270,9 +270,8 @@ elif [[ -n $KSU && $USE_KSU_SUSFS == "true" ]]; then
     if [[ $KSU == "Next" ]]; then
         log "Applying specific patches for kernelsu next"
         cd $workdir/KernelSU-Next
-        #patch -p1 < $workdir/patcher/ksun_susfs.patch
+        # patch -p1 < $workdir/patcher/ksun_susfs.patch
         patch -p1 < "$workdir/patcher/ksun_susfsv1.5.9.patch"
-        exit
 
         
         
