@@ -1,8 +1,11 @@
-From c623bb233be305f7dac7135d198d6b375aa33410 Mon Sep 17 00:00:00 2001
-From: sidex15 <24408329+sidex15@users.noreply.github.com>
-Date: Tue, 15 Jul 2025 16:13:37 +0800
-Subject: [PATCH] kernel: implement susfs v1.5.9
+From 73c0fdb5de15b1ab15f57bc1abd53f4d84578550 Mon Sep 17 00:00:00 2001
+From: Handy <64670957+cymerz@users.noreply.github.com>
+Date: Thu, 17 Jul 2025 20:38:34 +0700
+Subject: [PATCH] Next susfs (#1)
 
+* Implement susfs v1.5.9
+
+* Double declaration of ksu_access_ok
 ---
  .gitignore               |   3 +
  kernel/Kconfig           | 135 +++++++++
@@ -11,7 +14,7 @@ Subject: [PATCH] kernel: implement susfs v1.5.9
  kernel/apk_sign.c        |   2 +-
  kernel/apk_sign.h        |   2 +-
  kernel/core_hook.c       | 577 +++++++++++++++++++++++++++++++++++++--
- kernel/kernel_compat.c   |  10 +
+ kernel/kernel_compat.c   |  18 +-
  kernel/kernel_compat.h   |   1 +
  kernel/ksu.c             |  16 +-
  kernel/ksud.c            |  21 +-
@@ -23,7 +26,7 @@ Subject: [PATCH] kernel: implement susfs v1.5.9
  kernel/sucompat.c        | 106 +++++--
  kernel/throne_tracker.c  |   4 +-
  kernel/throne_tracker.h  |   2 +-
- 19 files changed, 1025 insertions(+), 80 deletions(-)
+ 19 files changed, 1025 insertions(+), 88 deletions(-)
 
 diff --git a/.gitignore b/.gitignore
 index 706fd07fa..f27592802 100644
@@ -1083,7 +1086,7 @@ index 6bbb350cd..ecfd6be6b 100644
  }
  
 diff --git a/kernel/kernel_compat.c b/kernel/kernel_compat.c
-index db47f8eb5..873da944b 100644
+index db47f8eb5..7af5585fd 100644
 --- a/kernel/kernel_compat.c
 +++ b/kernel/kernel_compat.c
 @@ -76,6 +76,16 @@ void ksu_android_ns_fs_check()
@@ -1103,6 +1106,21 @@ index db47f8eb5..873da944b 100644
  struct file *ksu_filp_open_compat(const char *filename, int flags, umode_t mode)
  {
  #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) || defined(CONFIG_IS_HW_HISI) || defined(CONFIG_KSU_ALLOWLIST_WORKAROUND)
+@@ -174,14 +184,6 @@ long ksu_strncpy_from_user_nofault(char *dst, const void __user *unsafe_addr,
+ }
+ #endif
+ 
+-static inline int ksu_access_ok(const void *addr, unsigned long size)
+-{
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0)
+-	return access_ok(addr, size);
+-#else
+-	return access_ok(VERIFY_READ, addr, size);
+-#endif
+-}
+ 
+ long ksu_strncpy_from_user_retry(char *dst, const void __user *unsafe_addr,
+ 				   long count)
 diff --git a/kernel/kernel_compat.h b/kernel/kernel_compat.h
 index c85e9e2c2..cad307a00 100644
 --- a/kernel/kernel_compat.h
@@ -1767,3 +1785,4 @@ index f33e4cb91..98bb9d591 100644
 +void ksu_track_throne();
  
  bool is_lock_held(const char *path);
+ 
