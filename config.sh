@@ -18,7 +18,7 @@ ANYKERNEL_BRANCH="gki"
 
 # Kernel
 KERNEL_REPO="https://github.com/sitricode/gki_5.10"
-KERNEL_BRANCH="stable"
+KERNEL_BRANCH="master"
 KERNEL_DEFCONFIG="gki_defconfig"
 DEFCONFIG_FILE="$workdir/common/arch/arm64/configs/$KERNEL_DEFCONFIG"
 
@@ -35,7 +35,7 @@ GKI_RELEASES_REPO="https://github.com/sitricode/gki-release"
 
 # AOSP Clang
 USE_AOSP_CLANG="true"
-AOSP_CLANG_SOURCE="https://pub-518e5c4602fc4016aa4a80856eaa0ad4.r2.dev/clang-r536225.tar.gz" # Should be version number or direct link to clang tarball
+AOSP_CLANG_SOURCE="https://pub-518e5c4602fc4016aa4a80856eaa0ad4.r2.dev/clang-r547379..tar.gz" # Should be version number or direct link to clang tarball
 
 # Custom clang
 USE_CUSTOM_CLANG="false"
