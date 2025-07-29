@@ -35,7 +35,7 @@ GKI_RELEASES_REPO="https://github.com/sitricode/gki-release"
 
 # AOSP Clang
 USE_AOSP_CLANG="true"
-AOSP_CLANG_SOURCE="https://pub-518e5c4602fc4016aa4a80856eaa0ad4.r2.dev/clang-r547379..tar.gz" # Should be version number or direct link to clang tarball
+AOSP_CLANG_SOURCE="https://pub-518e5c4602fc4016aa4a80856eaa0ad4.r2.dev/clang-r547379.tar.gz" # Should be version number or direct link to clang tarball
 
 # Custom clang
 USE_CUSTOM_CLANG="false"
